@@ -499,6 +499,11 @@ a { color: inherit; }
 .chip.is-on { background: var(--red); color: var(--on-red); border-color: var(--red); }
 .chip.is-on::before { content: '✓ '; }
 .chip:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+.chip--add { border-style: dashed; border-color: var(--red); color: var(--red); }
+.chip--add.is-on { border-style: solid; }
+.chip--add.is-on::before { content: none; }
+.chip__price { font-weight: 800; }
+.sheet__extras { margin-bottom: var(--sp-3); }
 .sheet__nota { display: block; margin-bottom: var(--sp-3); }
 .sheet__nota input { width: 100%; background: var(--paper); border: 1.5px solid var(--hair-2); border-radius: 10px; padding: .7rem .85rem; font-family: var(--font-body); font-size: 1rem; min-height: 48px; }
 .sheet__nota input:focus { outline: none; border-color: var(--red); }

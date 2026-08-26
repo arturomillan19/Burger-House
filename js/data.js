@@ -30,6 +30,10 @@ BurgerHouse.MENU = [
     nombre: 'Burgers',
     desc: 'Pan brioche, carne de calidad y queso americano. Sabor de cadena, hechas como en casa.',
     img: 'Media/burgers.jpg',
+    // Opciones extra que aplican a toda la categoría (se muestran al personalizar).
+    extras: [
+      { id: 'carne-extra', nombre: 'Carne extra', precio: 30 },
+    ],
     items: [
       { id: 'cheese-burger', nombre: 'Cheese Burger', precio: 140, desc: 'Pan brioche, aderezo, carne con queso americano.', quita: ['aderezo'] },
       { id: 'burger', nombre: 'Burger', precio: 160, desc: 'Pan brioche, aderezo, carne con queso americano, lechuga, tomate y cebolla caramelizada.', quita: ['lechuga', 'tomate', 'cebolla', 'aderezo'] },
