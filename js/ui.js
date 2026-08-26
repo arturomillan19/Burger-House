@@ -231,17 +231,12 @@ BurgerHouse.ui = (function () {
       '<button class="ov-mas" type="button" data-ir-cats><span aria-hidden="true">+</span> Agregar algo más</button>' +
       drinksHTML() +
       '<div class="ov-checkout">' +
-        '<div class="entrega" role="radiogroup" aria-label="Entrega">' +
-          '<label class="entrega__op"><input type="radio" name="entrega" value="recoger" checked> Recojo</label>' +
-          '<label class="entrega__op"><input type="radio" name="entrega" value="domicilio"> A domicilio</label>' +
-        '</div>' +
-        '<div class="campo" id="campo-dir" hidden><input type="text" id="f-direccion" placeholder="Dirección de entrega" /></div>' +
+        '<div class="pickup"><span class="pickup__ico" aria-hidden="true">🛍️</span> <span>Paso a recoger al local</span></div>' +
         '<div class="campo"><input type="text" id="f-nombre" placeholder="¿A nombre de quién?" autocomplete="name" /></div>' +
         ((pm && pm.activa) ? '<label class="maquila"><input type="checkbox" id="f-maquila" /> <span>🏭 Trabajo en maquila <small>(' + pm.porcentaje + '% presentando credencial)</small></span></label>' : '') +
       '</div>';
     renderLineas();
     refreshDrinks();
-    syncEntrega();
   }
   function refreshResumen() {
     if (mostrandoExito) return;
@@ -320,7 +315,6 @@ BurgerHouse.ui = (function () {
       if (e.target.closest('#f-enviar')) { enviar(); return; }
     });
     ov.addEventListener('change', (e) => {
-      if (e.target.name === 'entrega') { const d = $('#campo-dir'); if (d) { d.hidden = e.target.value !== 'domicilio'; if (!d.hidden) $('#f-direccion').focus(); } syncEntrega(); }
       if (e.target.id === 'f-maquila') updateTotalDisplay();
       const ni = e.target.closest('[data-nota-input]');
       if (ni) BurgerHouse.cart.updateNota(+ni.getAttribute('data-nota-input'), ni.value);
@@ -335,13 +329,10 @@ BurgerHouse.ui = (function () {
   }
 
   function enviar() {
-    const tipo = ($('#orden input[name="entrega"]:checked') || {}).value || 'recoger';
-    const direccion = (($('#f-direccion') || {}).value || '').trim();
     const nombre = (($('#f-nombre') || {}).value || '').trim();
-    if (tipo === 'domicilio' && !direccion) { const el = $('#f-direccion'); el.focus(); el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), 500); return; }
     if (!nombre) { const el = $('#f-nombre'); el.focus(); el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), 500); return; }
     const maquila = !!(($('#f-maquila') || {}).checked);
-    const url = BurgerHouse.whatsapp.urlPedido({ tipo, direccion, nombre, maquila });
+    const url = BurgerHouse.whatsapp.urlPedido({ nombre, maquila });
     if (!url) return;
     window.open(url, '_blank');
     mostrarExito(url);

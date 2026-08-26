@@ -8,7 +8,7 @@ BurgerHouse.whatsapp = (function () {
 
   const peso = (n) => '$' + n.toLocaleString('es-MX');
 
-  // entrega: { tipo:'recoger'|'domicilio', direccion?, nombre? }
+  // entrega: { nombre?, maquila? } — solo para recoger (sin servicio a domicilio)
   function mensajePedido(entrega) {
     const lineas = BurgerHouse.cart.lineas;
     if (!lineas.length) return null;
@@ -46,12 +46,7 @@ BurgerHouse.whatsapp = (function () {
     }
     msg += '*Total:* ' + peso(sub - desc) + '\n\n';
 
-    if (entrega.tipo === 'domicilio') {
-      msg += '*Entrega:* A domicilio\n';
-      msg += '*Dirección:* ' + (entrega.direccion ? entrega.direccion : '(la envío por este chat)') + '\n';
-    } else {
-      msg += '*Entrega:* Paso a recoger al local\n';
-    }
+    msg += '*Entrega:* Paso a recoger al local\n';
     if (aplicaMaq) msg += '🏭 *Descuento maquila:* presentaré mi credencial de la planta.\n';
 
     msg += '\n¡Gracias!';
