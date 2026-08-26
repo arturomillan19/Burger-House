@@ -93,10 +93,7 @@ BurgerHouse.ui = (function () {
         '<span class="acard__go" aria-hidden="true">→</span>' +
       '</button>'
     ).join('');
-    cont.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-cat-abrir]');
-      if (b) abrirOrden('items', b.getAttribute('data-cat-abrir'));
-    });
+    // La apertura por categoría se maneja con un listener global (data-cat-abrir).
   }
 
   function refreshAddCounts() {
@@ -156,11 +153,18 @@ BurgerHouse.ui = (function () {
   }
 
   function itemCtrlHTML(catId, itemId) {
+    const it = item(catId, itemId);
     const n = qtyDe(catId, itemId);
-    if (n === 0) return '<button class="oadd" type="button" data-oadd="' + catId + ':' + itemId + '"><span aria-hidden="true">+</span> Agregar</button>';
-    return '<div class="qtl"><button class="qtl__b" type="button" data-oless="' + catId + ':' + itemId + '" aria-label="Quitar">−</button>' +
+    const key = catId + ':' + itemId;
+    // Personalizable (tiene ingredientes removibles) → abre la hoja "sin ___".
+    if (it && it.quita && it.quita.length) {
+      return '<button class="oadd" type="button" data-ocustom="' + key + '"><span aria-hidden="true">+</span> Agregar</button>' +
+        (n ? '<span class="oadd-n">' + n + ' en tu pedido</span>' : '');
+    }
+    if (n === 0) return '<button class="oadd" type="button" data-oadd="' + key + '"><span aria-hidden="true">+</span> Agregar</button>';
+    return '<div class="qtl"><button class="qtl__b" type="button" data-oless="' + key + '" aria-label="Quitar">−</button>' +
       '<span class="qtl__n">' + n + '</span>' +
-      '<button class="qtl__b" type="button" data-oadd="' + catId + ':' + itemId + '" aria-label="Agregar">+</button></div>';
+      '<button class="qtl__b" type="button" data-oadd="' + key + '" aria-label="Agregar">+</button></div>';
   }
   function renderItems() {
     const c = cat(catActual);
@@ -250,6 +254,8 @@ BurgerHouse.ui = (function () {
       if (e.target.closest('[data-ir-cats]')) { setVista('categorias'); return; }
       if (e.target.closest('[data-ir-resumen]')) { setVista('resumen'); return; }
 
+      const ocustom = e.target.closest('[data-ocustom]');
+      if (ocustom) { const [c, i] = ocustom.getAttribute('data-ocustom').split(':'); abrirCustom(c, i); return; }
       const oadd = e.target.closest('[data-oadd]');
       if (oadd) {
         const [c, i] = oadd.getAttribute('data-oadd').split(':');
@@ -313,6 +319,64 @@ BurgerHouse.ui = (function () {
         '<button class="btn btn--red btn--full" type="button" id="ex-cerrar">Listo</button></div>';
     if (url) $('#ex-reenviar').addEventListener('click', () => window.open(url, '_blank'));
     $('#ex-cerrar').addEventListener('click', () => { mostrandoExito = false; cerrarOrden(); });
+  }
+
+  /* ============================================================
+     Hoja de personalización ("sin ___" + cantidad + nota)
+     ============================================================ */
+  let sheetEl = null;
+  function abrirCustom(catId, itemId) {
+    const it = item(catId, itemId);
+    if (!it) return;
+    cerrarSheet();
+    lockScroll();
+    const sel = new Set();
+    let qty = 1;
+    const wrap = document.createElement('div');
+    wrap.className = 'sheet-wrap';
+    wrap.innerHTML =
+      '<div class="sheet-scrim" data-cerrar></div>' +
+      '<div class="sheet" role="dialog" aria-modal="true" aria-label="Personalizar ' + esc(it.nombre) + '">' +
+        '<button class="sheet__close" type="button" data-cerrar aria-label="Cerrar">×</button>' +
+        '<p class="sheet__eyebrow">' + esc(cat(catId).nombre) + '</p>' +
+        '<h3 class="sheet__title">' + esc(it.nombre) + '</h3>' +
+        (it.desc ? '<p class="sheet__desc">' + esc(it.desc) + '</p>' : '') +
+        '<div class="sheet__quita"><p class="sheet__lbl">¿Le quitamos algo? <small>toca para quitar</small></p>' +
+          '<div class="chips">' + it.quita.map((q) => '<button class="chip" type="button" data-sin="' + esc(q) + '">sin ' + esc(q) + '</button>').join('') + '</div></div>' +
+        '<label class="sheet__nota"><span class="sheet__lbl">Otra indicación <small>(opcional)</small></span>' +
+          '<input type="text" id="c-nota" placeholder="Ej: bien dorada, extra queso" /></label>' +
+        '<div class="sheet__foot">' +
+          '<div class="qtl"><button class="qtl__b" type="button" data-c="-1" aria-label="Menos">−</button>' +
+            '<span class="qtl__n" id="c-qty">1</span>' +
+            '<button class="qtl__b" type="button" data-c="1" aria-label="Más">+</button></div>' +
+          '<button class="btn btn--red sheet__add" type="button" id="c-add">Agregar · <span id="c-total">' + peso(it.precio) + '</span></button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(wrap);
+    sheetEl = wrap;
+    const qEl = wrap.querySelector('#c-qty'); const tEl = wrap.querySelector('#c-total');
+    const refresh = () => { qEl.textContent = qty; tEl.textContent = peso(it.precio * qty); };
+    wrap.addEventListener('click', (e) => {
+      if (e.target.closest('[data-cerrar]')) { cerrarSheet(); return; }
+      const c = e.target.closest('[data-c]'); if (c) { qty = Math.max(1, qty + (+c.getAttribute('data-c'))); refresh(); return; }
+      const chip = e.target.closest('[data-sin]');
+      if (chip) { const v = chip.getAttribute('data-sin'); if (sel.has(v)) { sel.delete(v); chip.classList.remove('is-on'); } else { sel.add(v); chip.classList.add('is-on'); } return; }
+      if (e.target.closest('#c-add')) {
+        const sins = [...sel].map((s) => 'sin ' + s);
+        const free = (wrap.querySelector('#c-nota').value || '').trim();
+        const nota = sins.concat(free ? [free] : []).join(', ');
+        BurgerHouse.cart.add({ categoriaId: catId, categoriaNombre: cat(catId).nombre, itemId: itemId, nombre: it.nombre, precio: it.precio, cantidad: qty, nota: nota });
+        cerrarSheet();
+        pulsoFab();
+      }
+    });
+    wrap.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); cerrarSheet(); } });
+    setTimeout(() => { const c = wrap.querySelector('.sheet__close'); if (c) c.focus(); }, 30);
+  }
+  function cerrarSheet() {
+    if (!sheetEl) return;
+    sheetEl.remove(); sheetEl = null;
+    if (!$('#orden').classList.contains('is-open')) unlockScroll();
   }
 
   /* ============================================================
@@ -403,13 +467,22 @@ BurgerHouse.ui = (function () {
     initHeroRotator();
     initHeader();
 
-    // "Añadir" en la carta de la página → agrega y avisa (sin salir de la página)
+    // "Añadir" en la carta de la página → personalizable abre la hoja; simple agrega directo
     $('#menu-cats').addEventListener('click', (e) => {
       const b = e.target.closest('[data-add]');
       if (!b) return;
       const [c, i] = b.getAttribute('data-add').split(':');
       const it = item(c, i);
-      if (it) { BurgerHouse.cart.add({ categoriaId: c, categoriaNombre: cat(c).nombre, itemId: i, nombre: it.nombre, precio: it.precio, cantidad: 1, nota: '' }); pulsoFab(); }
+      if (!it) return;
+      if (it.quita && it.quita.length) { abrirCustom(c, i); return; }
+      BurgerHouse.cart.add({ categoriaId: c, categoriaNombre: cat(c).nombre, itemId: i, nombre: it.nombre, precio: it.precio, cantidad: 1, nota: '' });
+      pulsoFab();
+    });
+
+    // Chips del hero / tarjetas de antojo → abren el flujo guiado en esa categoría
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-cat-abrir]');
+      if (b) abrirOrden('items', b.getAttribute('data-cat-abrir'));
     });
 
     // Cambios del carrito → refrescar todo lo visible

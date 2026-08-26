@@ -21,7 +21,9 @@ BurgerHouse.config = {
   promo: null,
 };
 
-/* MENU: bandas de la carta. Cada item es pedible (id estable = llave en el carrito). */
+/* MENU: bandas de la carta. Cada item es pedible (id estable = llave en el carrito).
+   `quita`: ingredientes que se pueden remover (chips "sin ___" al personalizar).
+   Deja el arreglo vacío o quítalo si el platillo no lleva nada removible. */
 BurgerHouse.MENU = [
   {
     id: 'burgers',
@@ -29,11 +31,11 @@ BurgerHouse.MENU = [
     desc: 'Pan brioche, carne de calidad y queso americano. Sabor de cadena, hechas como en casa.',
     img: 'Media/burgers.jpg',
     items: [
-      { id: 'cheese-burger', nombre: 'Cheese Burger', precio: 140, desc: 'Pan brioche, aderezo, carne con queso americano.' },
-      { id: 'burger', nombre: 'Burger', precio: 160, desc: 'Pan brioche, aderezo, carne con queso americano, lechuga, tomate y cebolla caramelizada.' },
-      { id: 'bacon-burger', nombre: 'Bacon Burger', precio: 180, desc: 'Pan brioche, aderezo, carne con queso americano, lechuga, tomate, cebolla caramelizada y tocino.' },
-      { id: 'bbq-burger', nombre: 'BBQ Burger', precio: 180, desc: 'Pan brioche, BBQ, carne con queso americano, tocino y aros de cebolla.' },
-      { id: 'green-burger', nombre: 'Green Burger', precio: 150, desc: 'Aderezo, carne con queso americano, tomate, cebolla caramelizada y tocino, envuelta en hojas de lechuga.' },
+      { id: 'cheese-burger', nombre: 'Cheese Burger', precio: 140, desc: 'Pan brioche, aderezo, carne con queso americano.', quita: ['aderezo'] },
+      { id: 'burger', nombre: 'Burger', precio: 160, desc: 'Pan brioche, aderezo, carne con queso americano, lechuga, tomate y cebolla caramelizada.', quita: ['lechuga', 'tomate', 'cebolla', 'aderezo'] },
+      { id: 'bacon-burger', nombre: 'Bacon Burger', precio: 180, desc: 'Pan brioche, aderezo, carne con queso americano, lechuga, tomate, cebolla caramelizada y tocino.', quita: ['lechuga', 'tomate', 'cebolla', 'tocino', 'aderezo'] },
+      { id: 'bbq-burger', nombre: 'BBQ Burger', precio: 180, desc: 'Pan brioche, BBQ, carne con queso americano, tocino y aros de cebolla.', quita: ['tocino', 'aros de cebolla'] },
+      { id: 'green-burger', nombre: 'Green Burger', precio: 150, desc: 'Aderezo, carne con queso americano, tomate, cebolla caramelizada y tocino, envuelta en hojas de lechuga.', quita: ['tomate', 'cebolla', 'tocino', 'aderezo'] },
     ],
   },
   {
@@ -45,8 +47,8 @@ BurgerHouse.MENU = [
       { id: 'aros-cebolla', nombre: 'Aros de Cebolla', precio: 120, desc: 'Rodajas de cebolla en forma de anillo, empanizadas y fritas.' },
       { id: 'dedos-queso', nombre: 'Dedos de Queso', precio: 120, desc: 'Bastones de queso con una capa crujiente de pan molido y especias.' },
       { id: 'papas-fritas', nombre: 'Papas Fritas', precio: 80, desc: 'Bastones de papa fritos, acompañados de aderezo.' },
-      { id: 'papas-especiales', nombre: 'Papas Especiales', precio: 130, desc: 'Papas fritas con cebolla caramelizada, tocino y aderezo.' },
-      { id: 'papas-con-carne', nombre: 'Papas con Carne', precio: 150, desc: 'Papas fritas con cebolla caramelizada, tocino y carne molida.' },
+      { id: 'papas-especiales', nombre: 'Papas Especiales', precio: 130, desc: 'Papas fritas con cebolla caramelizada, tocino y aderezo.', quita: ['cebolla', 'tocino', 'aderezo'] },
+      { id: 'papas-con-carne', nombre: 'Papas con Carne', precio: 150, desc: 'Papas fritas con cebolla caramelizada, tocino y carne molida.', quita: ['cebolla', 'tocino'] },
     ],
   },
   {
@@ -55,11 +57,11 @@ BurgerHouse.MENU = [
     desc: 'Masa delgada artesanal, horneada al momento.',
     img: 'Media/pizzas.jpg',
     items: [
-      { id: 'pizza-3-carnes', nombre: '3 Carnes', precio: 180, desc: 'Salsa de tomate, queso, peperoni, tocino y salchicha italiana.' },
+      { id: 'pizza-3-carnes', nombre: '3 Carnes', precio: 180, desc: 'Salsa de tomate, queso, peperoni, tocino y salchicha italiana.', quita: ['peperoni', 'tocino', 'salchicha'] },
       { id: 'pizza-doble-peperoni', nombre: 'Doble Peperoni', precio: 180, desc: 'Salsa de tomate, queso y gran cantidad de peperoni.' },
-      { id: 'pizza-italiana', nombre: 'Italiana', precio: 180, desc: 'Salsa de tomate, queso, peperoni, champiñón, cebolla y pimiento.' },
-      { id: 'pizza-lombarda', nombre: 'Lombarda', precio: 180, desc: 'Salsa de tomate, queso, tocino y champiñón.' },
-      { id: 'pizza-margarita', nombre: 'Margarita', precio: 180, desc: 'Salsa de tomate, queso, tomate cherry, albahaca y aceite de oliva.' },
+      { id: 'pizza-italiana', nombre: 'Italiana', precio: 180, desc: 'Salsa de tomate, queso, peperoni, champiñón, cebolla y pimiento.', quita: ['champiñón', 'cebolla', 'pimiento', 'peperoni'] },
+      { id: 'pizza-lombarda', nombre: 'Lombarda', precio: 180, desc: 'Salsa de tomate, queso, tocino y champiñón.', quita: ['champiñón', 'tocino'] },
+      { id: 'pizza-margarita', nombre: 'Margarita', precio: 180, desc: 'Salsa de tomate, queso, tomate cherry, albahaca y aceite de oliva.', quita: ['tomate cherry', 'albahaca'] },
     ],
   },
 ];

@@ -11,7 +11,7 @@
 
   <!-- Fuentes auto-alojadas (ver css/styles.css). Sin dependencias externas. -->
   <link rel="preload" href="fonts/hanken-grotesk-var.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=6" />
+  <link rel="stylesheet" href="css/styles.css?v=7" />
 
   <!-- Logo monolínea reutilizable -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -50,18 +50,21 @@
       <img class="hero__bg" src="Media/hero.jpg" alt="Hamburguesa de Burger House recién hecha" fetchpriority="high" />
       <div class="wrap hero__inner">
         <div class="hero__texto">
-          <p class="eyebrow hero__eyebrow">Guaymas, Sonora · Est. 2024</p>
+          <p class="eyebrow hero__eyebrow">Guaymas, Sonora · Hecho en casa</p>
           <h1 class="hero__title">
-            <span class="hero__fixed">Se me antoja</span>
+            <span class="hero__fixed">Se te antoja</span>
             <span class="hero__rot" aria-live="polite"><span class="hero__rot-word" id="hero-rot">una burger</span></span>
           </h1>
-          <p class="hero__lede">
-            Sabor de cadena grande, con ingredientes de calidad y sazón de casa.
-            Arma tu pedido en segundos y mándalo por WhatsApp.
-          </p>
+          <p class="hero__lede">Pídela en un par de toques. La comanda llega directo por WhatsApp.</p>
           <div class="hero__cta">
-            <button class="btn btn--red btn--lg" type="button" data-abrir-orden>Arma tu pedido</button>
-            <button class="btn btn--cream" type="button" data-scroll="#menu">Ver la carta</button>
+            <button class="btn btn--red btn--xl" type="button" data-abrir-orden><span class="hero__cta-ico" aria-hidden="true">🍔</span> Arma tu pedido</button>
+          </div>
+          <div class="hero__chips" role="group" aria-label="Empieza por categoría">
+            <span class="hero__chips-lbl">o empieza por:</span>
+            <button class="hero__chip" type="button" data-cat-abrir="burgers">Burgers</button>
+            <button class="hero__chip" type="button" data-cat-abrir="pizzas">Pizzas</button>
+            <button class="hero__chip" type="button" data-cat-abrir="entradas">Entradas</button>
+            <button class="hero__chip" type="button" data-cat-abrir="bebidas">Bebidas</button>
           </div>
         </div>
       </div>
@@ -173,9 +176,9 @@
     <footer class="orden__foot" id="orden-foot"><!-- inyectado por js/ui.js --></footer>
   </div>
 
-  <script defer src="js/data.js?v=6"></script>
-  <script defer src="js/cart.js?v=6"></script>
-  <script defer src="js/whatsapp.js?v=6"></script>
-  <script defer src="js/ui.js?v=6"></script>
+  <script defer src="js/data.js?v=7"></script>
+  <script defer src="js/cart.js?v=7"></script>
+  <script defer src="js/whatsapp.js?v=7"></script>
+  <script defer src="js/ui.js?v=7"></script>
 </body>
 </html>
