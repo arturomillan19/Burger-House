@@ -172,6 +172,15 @@ BurgerHouse.ui = (function () {
       '<button class="btn btn--red btn-enviar" type="button" id="f-enviar">Enviar por WhatsApp</button>';
     footBuilt = true;
     updateNudge();
+    syncEntrega();
+  }
+
+  // Respaldo de :has() para navegadores viejos: resalta la opción de entrega elegida.
+  function syncEntrega() {
+    document.querySelectorAll('.entrega__op').forEach((op) => {
+      const r = op.querySelector('input');
+      op.classList.toggle('is-sel', !!(r && r.checked));
+    });
   }
 
   function updateFootDynamic() {
@@ -217,6 +226,7 @@ BurgerHouse.ui = (function () {
     d.addEventListener('change', (e) => {
       if (e.target.name === 'entrega') {
         const dir = $('#campo-dir'); if (dir) { dir.hidden = e.target.value !== 'domicilio'; if (!dir.hidden) $('#f-direccion').focus(); }
+        syncEntrega();
       }
       const ni = e.target.closest('[data-nota-input]');
       if (ni) BurgerHouse.cart.updateNota(+ni.getAttribute('data-nota-input'), ni.value);

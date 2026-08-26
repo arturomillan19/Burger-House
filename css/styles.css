@@ -5,6 +5,14 @@
  * Un solo mundo visual (crema), pintado explícitamente. Mobile-first, sin build.
  */
 
+/* ================= FUENTES (auto-alojadas · sin dependencias externas) ================= */
+/* Se sirven desde el propio repo para que el sitio cargue aunque la red bloquee o
+   ralentice servicios externos. font-display:swap = el texto se ve al instante con la
+   fuente de respaldo y la tipográfica entra cuando termina de bajar. */
+@font-face { font-family: 'Fraunces'; font-style: normal; font-weight: 600; font-display: swap; src: url("../fonts/fraunces-600.woff2") format("woff2"); }
+@font-face { font-family: 'Fraunces'; font-style: italic; font-weight: 500; font-display: swap; src: url("../fonts/fraunces-italic-500.woff2") format("woff2"); }
+@font-face { font-family: 'Hanken Grotesk'; font-style: normal; font-weight: 400 800; font-display: swap; src: url("../fonts/hanken-grotesk-var.woff2") format("woff2"); }
+
 /* ================= TOKENS ================= */
 :root {
   --paper:    #F4EFE5;   /* marfil cálido (fondo) */
@@ -139,7 +147,7 @@ a { color: inherit; }
 @media (max-width: 720px) { .masthead__meta { display: none; } .brand__word { font-size: 1.02rem; letter-spacing: .12em; } }
 
 /* ================= HERO (foto de producto a sangre completa) ================= */
-.hero { position: relative; min-height: min(92svh, 800px); display: flex; align-items: flex-end; overflow: hidden; background: #17120F; color: var(--cream); }
+.hero { position: relative; min-height: min(92vh, 800px); min-height: min(92svh, 800px); display: flex; align-items: flex-end; overflow: hidden; background: #17120F; color: var(--cream); }
 .hero__bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 34%; z-index: 0; }
 .hero::after {
   content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
@@ -163,7 +171,7 @@ a { color: inherit; }
 /* ================= INTRO / calidad ================= */
 .intro { border-block: 1px solid var(--hair); }
 .intro__inner { display: grid; gap: var(--sp-4); padding-block: var(--sp-6); align-items: start; }
-.intro__lead { font-family: var(--font-display); font-weight: 500; font-size: var(--fs-h3); line-height: 1.25; letter-spacing: -.01em; max-width: 24ch; }
+.intro__lead { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-h3); line-height: 1.25; letter-spacing: -.01em; max-width: 24ch; }
 .intro__lead em { font-style: italic; color: var(--red); }
 .intro__cols { display: grid; gap: var(--sp-4); }
 .intro__col h3 { font-size: .8rem; letter-spacing: .14em; text-transform: uppercase; color: var(--red); margin-bottom: .4rem; }
@@ -275,7 +283,7 @@ a { color: inherit; }
 
 .drawer { position: fixed; z-index: 90; background: var(--paper-2); display: flex; flex-direction: column; box-shadow: var(--shadow); transition: transform .38s var(--ease); }
 /* móvil: hoja inferior */
-.drawer { left: 0; right: 0; bottom: 0; max-height: 90dvh; border-radius: 16px 16px 0 0; transform: translateY(100%); }
+.drawer { left: 0; right: 0; bottom: 0; max-height: 90vh; max-height: 90dvh; border-radius: 16px 16px 0 0; transform: translateY(100%); }
 .drawer.is-open { transform: translateY(0); }
 /* desktop: panel derecho */
 @media (min-width: 760px) {
@@ -316,7 +324,7 @@ a { color: inherit; }
 /* pie del drawer */
 .entrega { display: flex; gap: .5rem; margin-bottom: var(--sp-3); }
 .entrega__op { flex: 1; text-align: center; border: 1px solid var(--hair-2); border-radius: 40px; padding: .6rem; font-size: .9rem; font-weight: 600; cursor: pointer; transition: border-color .2s, background .2s, color .2s; }
-.entrega__op:has(input:checked) { border-color: var(--red); background: var(--red-soft); color: var(--red); }
+.entrega__op:has(input:checked), .entrega__op.is-sel { border-color: var(--red); background: var(--red-soft); color: var(--red); }
 .entrega__op input { position: absolute; opacity: 0; width: 0; height: 0; }
 .campo { margin-bottom: var(--sp-3); }
 .campo input { width: 100%; background: var(--paper); border: 1px solid var(--hair-2); border-radius: var(--radius); padding: .75rem .85rem; font-family: var(--font-body); font-size: 1rem; min-height: 48px; }
