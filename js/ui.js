@@ -410,7 +410,7 @@ BurgerHouse.ui = (function () {
   function initHeroRotator() {
     const el = $('#hero-rot');
     if (!el) return;
-    const palabras = ['una burger', 'unas papas', 'una pizza', 'todo junto'];
+    const palabras = ['una burger', 'unas papas', 'una pizza'];
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     let i = 0;
     setInterval(() => {
