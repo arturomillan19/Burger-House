@@ -70,10 +70,10 @@ BurgerHouse.MENU = [
   },
 ];
 
-/* Bebidas — aguas frescas y refrescos, $30 c/u. */
+/* Bebidas — aguas frescas y refrescos, $35 c/u. */
 BurgerHouse.BEBIDAS = [
-  { id: 'agua-fresca', nombre: 'Agua fresca', precio: 30, desc: 'Sabor del día' },
-  { id: 'refresco', nombre: 'Refresco', precio: 30, desc: 'Varios sabores' },
+  { id: 'agua-fresca', nombre: 'Agua fresca', precio: 35, desc: 'Sabor del día' },
+  { id: 'refresco', nombre: 'Refresco', precio: 35, desc: 'Varios sabores' },
 ];
 
 /* Paquetes para eventos (cotización por WhatsApp). Datos de sus historias de Instagram. */
