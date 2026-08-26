@@ -1,7 +1,9 @@
-/* Burger House — UI: carta editorial de una sola pantalla + carrito drawer.
+/* Burger House — UI: flujo guiado "¿qué se te antoja? → elige → listo" + carta en la página.
    Sin frameworks: DOM directo, patrón módulo. Mobile-first.
-   Flujo: explorar la carta → "Añadir" agrega al pedido → el drawer gestiona
-   cantidades, notas, entrega y nombre → se manda la comanda por WhatsApp. */
+   Superficies:
+   - Carta editorial en la página (browse) con botón "Añadir".
+   - Overlay guiado #orden con 3 vistas: categorías → items → resumen/checkout.
+   - Botón flotante #fab SIEMPRE visible + botón "Ver pedido" en el nav. */
 window.BurgerHouse = window.BurgerHouse || {};
 
 BurgerHouse.ui = (function () {
@@ -12,23 +14,30 @@ BurgerHouse.ui = (function () {
   const $ = (s, c) => (c || document).querySelector(s);
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+  const ICONO = { burgers: '🍔', entradas: '🍟', pizzas: '🍕', bebidas: '🥤' };
+  const notaPH = { burgers: 'Ej: término medio, sin cebolla', pizzas: 'Ej: mitad y mitad, extra queso', entradas: 'Ej: aderezo aparte', bebidas: 'Ej: sin hielo' };
+
   let scrollY = 0;
+  let vista = 'categorias';
+  let catActual = null;
   let footBuilt = false;
   let mostrandoExito = false;
 
-  const notaPH = { burgers: 'Ej: término medio, sin cebolla', pizzas: 'Ej: mitad y mitad, extra queso', entradas: 'Ej: aderezo aparte', bebidas: 'Ej: sin hielo' };
-
-  /* Categorías de la carta = MENU + Bebidas como una banda más. */
   function categorias() {
     return BurgerHouse.MENU.concat([{ id: 'bebidas', nombre: 'Bebidas', desc: 'Para acompañar.', items: BurgerHouse.BEBIDAS }]);
   }
-  function buscaItem(catId, itemId) {
-    const cat = categorias().find((c) => c.id === catId);
-    return cat ? cat.items.find((i) => i.id === itemId) : null;
+  function cat(id) { return categorias().find((c) => c.id === id); }
+  function item(catId, itemId) { const c = cat(catId); return c ? c.items.find((i) => i.id === itemId) : null; }
+  function desde(c) { return Math.min.apply(null, c.items.map((i) => i.precio)); }
+  // índice de la línea "simple" (sin nota) de un item, para +/- rápidos
+  function lineaSimple(catId, itemId) {
+    return BurgerHouse.cart.lineas.findIndex((l) => l.categoriaId === catId && l.itemId === itemId && !l.nota && !l.regalo);
   }
-  function nombreCat(catId) { const c = categorias().find((x) => x.id === catId); return c ? c.nombre : catId; }
+  function qtyDe(catId, itemId) {
+    return BurgerHouse.cart.lineas.reduce((s, l) => s + ((l.categoriaId === catId && l.itemId === itemId && !l.regalo) ? l.cantidad : 0), 0);
+  }
 
-  /* ---------- bloqueo de scroll ---------- */
+  /* ---------- scroll lock ---------- */
   function lockScroll() {
     if (document.body.classList.contains('no-scroll')) return;
     scrollY = window.scrollY;
@@ -43,48 +52,52 @@ BurgerHouse.ui = (function () {
   }
 
   /* ============================================================
-     1 · Carta (render una vez; los controles se refrescan)
+     Carta en la página (browse) + tarjetas "¿qué se te antoja?"
      ============================================================ */
-  function mrowHTML(cat, it) {
-    const key = cat.id + ':' + it.id;
-    return '<article class="mrow reveal">' +
+  function mrowHTML(c, it) {
+    const key = c.id + ':' + it.id;
+    return '<article class="mrow">' +
       '<div class="mrow__body">' +
-        '<div class="mrow__top">' +
-          '<span class="mrow__name">' + esc(it.nombre) + '</span>' +
+        '<div class="mrow__top"><span class="mrow__name">' + esc(it.nombre) + '</span>' +
           '<span class="mrow__dots" aria-hidden="true"></span>' +
-          '<span class="mrow__price">' + num(it.precio) + '</span>' +
-        '</div>' +
+          '<span class="mrow__price">' + num(it.precio) + '</span></div>' +
         (it.desc ? '<p class="mrow__desc">' + esc(it.desc) + '</p>' : '') +
       '</div>' +
-      '<div class="mrow__act">' +
-        '<button class="add" type="button" data-add="' + key + '" aria-label="Añadir ' + esc(it.nombre) + '">' +
-          '<span class="add__plus" aria-hidden="true">+</span><span class="add__txt">Añadir</span>' +
-          '<span class="add__count" data-add-count="' + key + '" hidden></span>' +
-        '</button>' +
-      '</div>' +
+      '<div class="mrow__act"><button class="add" type="button" data-add="' + key + '" aria-label="Añadir ' + esc(it.nombre) + '">' +
+        '<span class="add__plus" aria-hidden="true">+</span><span class="add__txt">Añadir</span>' +
+        '<span class="add__count" data-add-count="' + key + '" hidden></span></button></div>' +
     '</article>';
   }
-
   function renderMenu() {
     const cont = $('#menu-cats');
     if (!cont) return;
-    cont.innerHTML = categorias().map((cat) => {
-      const precios = cat.items.map((i) => i.precio);
-      const desde = Math.min.apply(null, precios);
-      const meta = cat.items.length + ' opciones · desde ' + peso(desde);
-      return '<section class="cat reveal" id="cat-' + cat.id + '">' +
-        '<div class="cat__head">' +
-          '<h3 class="cat__name">' + esc(cat.nombre) + '</h3>' +
-          '<span class="cat__meta muted">' + meta + '</span>' +
-        '</div>' +
-        (cat.desc ? '<p class="cat__desc">' + esc(cat.desc) + '</p>' : '') +
-        '<div class="cat__rule"></div>' +
-        cat.items.map((it) => mrowHTML(cat, it)).join('') +
-      '</section>';
-    }).join('');
+    cont.innerHTML = categorias().map((c) =>
+      '<section class="cat" id="cat-' + c.id + '">' +
+        '<div class="cat__head"><h3 class="cat__name">' + esc(c.nombre) + '</h3>' +
+          '<span class="cat__meta muted">' + c.items.length + ' opciones · desde ' + peso(desde(c)) + '</span></div>' +
+        (c.desc ? '<p class="cat__desc">' + esc(c.desc) + '</p>' : '') +
+        '<div class="cat__rule"></div>' + c.items.map((it) => mrowHTML(c, it)).join('') +
+      '</section>'
+    ).join('');
   }
-  // pequeño CSS inline para el head de categoría (nombre + meta a los lados)
-  // (definido aquí para no depender de reglas extra en el CSS)
+
+  function renderAntojo() {
+    const cont = $('#antojo-grid');
+    if (!cont) return;
+    cont.innerHTML = categorias().map((c) =>
+      '<button class="acard" type="button" data-cat-abrir="' + c.id + '">' +
+        (c.img ? '<img class="acard__img" src="' + c.img + '" alt="" loading="lazy" onerror="this.remove()" />' : '') +
+        '<span class="acard__ico" aria-hidden="true">' + (ICONO[c.id] || '🍽️') + '</span>' +
+        '<span class="acard__body"><span class="acard__name">' + esc(c.nombre) + '</span>' +
+          '<span class="acard__meta">desde ' + peso(desde(c)) + '</span></span>' +
+        '<span class="acard__go" aria-hidden="true">→</span>' +
+      '</button>'
+    ).join('');
+    cont.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-cat-abrir]');
+      if (b) abrirOrden('items', b.getAttribute('data-cat-abrir'));
+    });
+  }
 
   function refreshAddCounts() {
     const tot = {};
@@ -98,152 +111,189 @@ BurgerHouse.ui = (function () {
   }
 
   /* ============================================================
-     2 · Drawer del pedido
+     Overlay guiado
      ============================================================ */
-  function abrirDrawer() {
+  function abrirOrden(v, catId) {
     mostrandoExito = false;
-    footBuilt = false;
-    renderDrawerBody();
-    renderDrawerFoot();
-    $('#scrim').classList.add('is-open');
-    $('#scrim').setAttribute('aria-hidden', 'false');
-    const d = $('#drawer');
-    d.classList.add('is-open');
-    d.setAttribute('aria-hidden', 'false');
+    const ov = $('#orden');
+    ov.classList.add('is-open');
+    ov.setAttribute('aria-hidden', 'false');
     lockScroll();
-    $('#drawer-close').focus();
-    trapFocus(d);
+    setVista(v || 'categorias', catId);
+    $('#orden-close').focus();
+    trapFocus(ov);
   }
-  function cerrarDrawer() {
-    $('#scrim').classList.remove('is-open');
-    $('#scrim').setAttribute('aria-hidden', 'true');
-    const d = $('#drawer');
-    d.classList.remove('is-open');
-    d.setAttribute('aria-hidden', 'true');
+  function cerrarOrden() {
+    const ov = $('#orden');
+    ov.classList.remove('is-open');
+    ov.setAttribute('aria-hidden', 'true');
     unlockScroll();
-    actualizaCartbar();
+    actualizaFab();
   }
 
-  function renderDrawerBody() {
-    if (mostrandoExito) return;
-    const body = $('#drawer-body');
-    const lineas = BurgerHouse.cart.lineas;
-    const cnt = $('#drawer-count');
-    if (cnt) cnt.textContent = lineas.length ? '· ' + BurgerHouse.cart.count() + ' art.' : '';
-
-    if (!lineas.length) {
-      body.innerHTML = '<div class="drawer__vacio">' +
-        '<svg viewBox="0 0 32 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.5C3.5 4.8 9 2.5 16 2.5S28.5 4.8 28.5 9.5Z"/><path d="M4 13h24"/><path d="M4.5 16.5h23c0 3-4.6 5-11.5 5s-11.5-2-11.5-5Z"/></svg>' +
-        '<p>Tu pedido está vacío.<br>Agrega algo de la carta 🍔</p></div>';
-      return;
-    }
-    body.innerHTML = lineas.map((l, idx) => {
-      const sub = l.regalo ? 'Gratis' : peso(l.precio * l.cantidad);
-      const notaBlock = l.regalo ? '' :
-        (l.nota
-          ? '<div class="li__nota"><input type="text" value="' + esc(l.nota) + '" data-nota-input="' + idx + '" placeholder="' + (notaPH[l.categoriaId] || 'Nota') + '" /></div>'
-          : '<button class="li__nota-toggle" type="button" data-nota-open="' + idx + '">+ Agregar nota</button>');
-      return '<div class="li' + (l.regalo ? ' li--regalo' : '') + '">' +
-        '<div class="li__top"><span class="li__nombre">' + esc(l.nombre) + '</span><span class="li__precio">' + sub + '</span></div>' +
-        (l.regalo ? '<div class="li__row"><span class="muted" style="font-size:.86rem">Cortesía 🎉</span></div>' :
-          '<div class="li__row">' +
-            '<div class="qtl qtl--sm"><button class="qtl__b" type="button" data-qty="-1" data-idx="' + idx + '" aria-label="Menos">−</button>' +
-            '<span class="qtl__n">' + l.cantidad + '</span>' +
-            '<button class="qtl__b" type="button" data-qty="1" data-idx="' + idx + '" aria-label="Más">+</button></div>' +
-            '<button class="li__quitar" type="button" data-remove="' + idx + '">Quitar</button>' +
-          '</div>' + notaBlock) +
-      '</div>';
-    }).join('');
+  function setVista(v, catId) {
+    vista = v;
+    if (catId) catActual = catId;
+    if (v !== 'resumen') footBuilt = false;
+    const back = $('#orden-back'); const title = $('#orden-title');
+    if (v === 'categorias') { back.hidden = true; title.textContent = 'Arma tu pedido'; renderCategorias(); }
+    else if (v === 'items') { back.hidden = false; $('.orden__back-txt', back).textContent = 'Categorías'; title.textContent = cat(catActual).nombre; renderItems(); }
+    else { back.hidden = false; $('.orden__back-txt', back).textContent = 'Seguir eligiendo'; title.textContent = 'Tu pedido'; renderResumen(); }
+    renderFootOrden();
+    const body = $('#orden-body'); if (body) body.scrollTop = 0;
   }
 
-  function renderDrawerFoot() {
-    const foot = $('#drawer-foot');
-    if (mostrandoExito) return;
-    if (!BurgerHouse.cart.count()) { foot.innerHTML = ''; footBuilt = false; return; }
-    foot.innerHTML =
-      '<div class="nudge" id="drawer-nudge" hidden></div>' +
-      '<div class="entrega" role="radiogroup" aria-label="Entrega">' +
-        '<label class="entrega__op"><input type="radio" name="entrega" value="recoger" checked> Recojo</label>' +
-        '<label class="entrega__op"><input type="radio" name="entrega" value="domicilio"> A domicilio</label>' +
-      '</div>' +
-      '<div class="campo" id="campo-dir" hidden><input type="text" id="f-direccion" placeholder="Dirección de entrega" /></div>' +
-      '<div class="campo"><input type="text" id="f-nombre" placeholder="¿A nombre de quién?" autocomplete="name" /></div>' +
-      '<div class="totline"><span>Total</span><b id="drawer-total">' + num(BurgerHouse.cart.total()) + '</b></div>' +
-      '<button class="btn btn--red btn-enviar" type="button" id="f-enviar">Enviar por WhatsApp</button>';
-    footBuilt = true;
-    updateNudge();
-    syncEntrega();
+  function renderCategorias() {
+    $('#orden-body').innerHTML =
+      '<div class="ov-head"><h2 class="display">¿Qué se te <em>antoja?</em></h2><p class="muted">Elige una categoría para empezar.</p></div>' +
+      '<div class="ov-cats">' + categorias().map((c) =>
+        '<button class="ovcat" type="button" data-ir-items="' + c.id + '">' +
+          (c.img ? '<img class="ovcat__img" src="' + c.img + '" alt="" loading="lazy" onerror="this.remove()" />' : '<span class="ovcat__ph" aria-hidden="true"></span>') +
+          '<span class="ovcat__ico" aria-hidden="true">' + (ICONO[c.id] || '🍽️') + '</span>' +
+          '<span class="ovcat__t"><span class="ovcat__name">' + esc(c.nombre) + '</span><span class="ovcat__meta">' + c.items.length + ' opciones · desde ' + peso(desde(c)) + '</span></span>' +
+        '</button>'
+      ).join('') + '</div>';
   }
 
-  // Respaldo de :has() para navegadores viejos: resalta la opción de entrega elegida.
-  function syncEntrega() {
-    document.querySelectorAll('.entrega__op').forEach((op) => {
-      const r = op.querySelector('input');
-      op.classList.toggle('is-sel', !!(r && r.checked));
+  function itemCtrlHTML(catId, itemId) {
+    const n = qtyDe(catId, itemId);
+    if (n === 0) return '<button class="oadd" type="button" data-oadd="' + catId + ':' + itemId + '"><span aria-hidden="true">+</span> Agregar</button>';
+    return '<div class="qtl"><button class="qtl__b" type="button" data-oless="' + catId + ':' + itemId + '" aria-label="Quitar">−</button>' +
+      '<span class="qtl__n">' + n + '</span>' +
+      '<button class="qtl__b" type="button" data-oadd="' + catId + ':' + itemId + '" aria-label="Agregar">+</button></div>';
+  }
+  function renderItems() {
+    const c = cat(catActual);
+    $('#orden-body').innerHTML =
+      '<div class="ov-head"><span class="ov-ico" aria-hidden="true">' + (ICONO[c.id] || '🍽️') + '</span>' +
+        '<h2 class="display">' + esc(c.nombre) + '</h2>' + (c.desc ? '<p class="muted">' + esc(c.desc) + '</p>' : '') + '</div>' +
+      '<div class="ov-items">' + c.items.map((it) =>
+        '<article class="oitem">' +
+          '<div class="oitem__info"><p class="oitem__name">' + esc(it.nombre) + '</p>' +
+            (it.desc ? '<p class="oitem__desc">' + esc(it.desc) + '</p>' : '') +
+            '<p class="oitem__price">' + peso(it.precio) + '</p></div>' +
+          '<div class="oitem__ctrl" data-ctrl="' + c.id + ':' + it.id + '">' + itemCtrlHTML(c.id, it.id) + '</div>' +
+        '</article>'
+      ).join('') + '</div>';
+  }
+  function refreshItemCtrls() {
+    document.querySelectorAll('#orden-body [data-ctrl]').forEach((el) => {
+      const [c, i] = el.getAttribute('data-ctrl').split(':');
+      el.innerHTML = itemCtrlHTML(c, i);
     });
   }
 
-  function updateFootDynamic() {
+  function renderResumen() {
+    const body = $('#orden-body');
+    const lineas = BurgerHouse.cart.lineas;
     if (mostrandoExito) return;
+    if (!lineas.length) {
+      body.innerHTML = '<div class="ov-vacio"><span aria-hidden="true">🛒</span><p>Tu pedido está vacío.<br>Vuelve y elige algo rico 🍔</p>' +
+        '<button class="btn btn--red" type="button" data-ir-cats>Ver categorías</button></div>';
+      return;
+    }
+    body.innerHTML =
+      '<div class="ov-head ov-head--sm"><h2 class="display">Tu <em>pedido</em></h2></div>' +
+      '<div class="ov-lineas">' + lineas.map((l, idx) => {
+        const sub = l.regalo ? 'Gratis' : peso(l.precio * l.cantidad);
+        const nota = l.regalo ? '' : (l.nota
+          ? '<div class="li__nota"><input type="text" value="' + esc(l.nota) + '" data-nota-input="' + idx + '" placeholder="' + (notaPH[l.categoriaId] || 'Nota') + '" /></div>'
+          : '<button class="li__nota-toggle" type="button" data-nota-open="' + idx + '">+ Agregar nota</button>');
+        return '<div class="li' + (l.regalo ? ' li--regalo' : '') + '">' +
+          '<div class="li__top"><span class="li__nombre">' + esc(l.nombre) + '</span><span class="li__precio">' + sub + '</span></div>' +
+          (l.regalo ? '<div class="li__row"><span class="muted" style="font-size:.86rem">Cortesía 🎉</span></div>' :
+            '<div class="li__row"><div class="qtl qtl--sm">' +
+              '<button class="qtl__b" type="button" data-qty="-1" data-idx="' + idx + '" aria-label="Menos">−</button>' +
+              '<span class="qtl__n">' + l.cantidad + '</span>' +
+              '<button class="qtl__b" type="button" data-qty="1" data-idx="' + idx + '" aria-label="Más">+</button></div>' +
+              '<button class="li__quitar" type="button" data-remove="' + idx + '">Quitar</button></div>' + nota) +
+        '</div>';
+      }).join('') + '</div>' +
+      '<button class="ov-mas" type="button" data-ir-cats><span aria-hidden="true">+</span> Agregar algo más</button>' +
+      '<div class="ov-checkout">' +
+        '<div class="entrega" role="radiogroup" aria-label="Entrega">' +
+          '<label class="entrega__op"><input type="radio" name="entrega" value="recoger" checked> Recojo</label>' +
+          '<label class="entrega__op"><input type="radio" name="entrega" value="domicilio"> A domicilio</label>' +
+        '</div>' +
+        '<div class="campo" id="campo-dir" hidden><input type="text" id="f-direccion" placeholder="Dirección de entrega" /></div>' +
+        '<div class="campo"><input type="text" id="f-nombre" placeholder="¿A nombre de quién?" autocomplete="name" /></div>' +
+      '</div>';
+    syncEntrega();
+  }
+
+  function renderFootOrden() {
+    const foot = $('#orden-foot');
+    if (mostrandoExito) { foot.innerHTML = ''; return; }
     const count = BurgerHouse.cart.count();
-    if (count === 0) { $('#drawer-foot').innerHTML = ''; footBuilt = false; return; }
-    if (!footBuilt) { renderDrawerFoot(); return; }
-    const t = $('#drawer-total'); if (t) t.textContent = num(BurgerHouse.cart.total());
-    updateNudge();
+    if (vista === 'resumen') {
+      foot.innerHTML = count > 0
+        ? '<div class="ov-total"><span>Total</span><b>' + num(BurgerHouse.cart.total()) + '</b></div>' +
+          '<button class="btn btn--red btn--full" type="button" id="f-enviar">Enviar por WhatsApp</button>'
+        : '';
+      return;
+    }
+    // categorías / items: acceso al pedido si ya hay algo
+    if (count > 0) {
+      foot.innerHTML = '<button class="btn btn--red btn--full" type="button" data-ir-resumen>' +
+        'Ver mi pedido · ' + peso(BurgerHouse.cart.total()) + ' <span class="ov-n">' + count + '</span></button>';
+    } else {
+      foot.innerHTML = '<p class="ov-hint">Toca “Agregar” en lo que quieras 👆</p>';
+    }
   }
 
-  function updateNudge() {
-    const el = $('#drawer-nudge');
-    if (!el) return;
-    const promo = BurgerHouse.config.promo;
-    if (!promo) { el.hidden = true; return; }
-    const falta = BurgerHouse.cart.faltaParaPromo();
-    el.hidden = false;
-    el.innerHTML = falta > 0
-      ? 'Te faltan <b>' + peso(falta) + '</b> para tu <b>' + esc(promo.regalo.nombre.replace(' — cortesía', '')) + ' gratis</b>'
-      : '¡Llevas tu <b>cortesía</b>! 🎉';
-  }
+  /* ---------- eventos del overlay (delegados) ---------- */
+  function bindOrden() {
+    const ov = $('#orden');
+    ov.addEventListener('click', (e) => {
+      const irItems = e.target.closest('[data-ir-items]');
+      if (irItems) { setVista('items', irItems.getAttribute('data-ir-items')); return; }
+      if (e.target.closest('[data-ir-cats]')) { setVista('categorias'); return; }
+      if (e.target.closest('[data-ir-resumen]')) { setVista('resumen'); return; }
 
-  /* eventos del drawer (delegados) */
-  function bindDrawer() {
-    const d = $('#drawer');
-    d.addEventListener('click', (e) => {
-      const q = e.target.closest('[data-qty]');
-      if (q) { const idx = +q.getAttribute('data-idx'); const l = BurgerHouse.cart.lineas[idx]; if (l) BurgerHouse.cart.updateCantidad(idx, l.cantidad + (+q.getAttribute('data-qty'))); return; }
+      const oadd = e.target.closest('[data-oadd]');
+      if (oadd) {
+        const [c, i] = oadd.getAttribute('data-oadd').split(':');
+        const it = item(c, i);
+        if (it) BurgerHouse.cart.add({ categoriaId: c, categoriaNombre: cat(c).nombre, itemId: i, nombre: it.nombre, precio: it.precio, cantidad: 1, nota: '' });
+        return;
+      }
+      const oless = e.target.closest('[data-oless]');
+      if (oless) { const [c, i] = oless.getAttribute('data-oless').split(':'); const idx = lineaSimple(c, i); if (idx !== -1) BurgerHouse.cart.updateCantidad(idx, BurgerHouse.cart.lineas[idx].cantidad - 1); return; }
+
+      const qty = e.target.closest('[data-qty]');
+      if (qty) { const idx = +qty.getAttribute('data-idx'); const l = BurgerHouse.cart.lineas[idx]; if (l) BurgerHouse.cart.updateCantidad(idx, l.cantidad + (+qty.getAttribute('data-qty'))); return; }
       const rm = e.target.closest('[data-remove]');
       if (rm) { BurgerHouse.cart.remove(+rm.getAttribute('data-remove')); return; }
       const no = e.target.closest('[data-nota-open]');
       if (no) {
         const idx = no.getAttribute('data-nota-open');
-        const wrap = document.createElement('div'); wrap.className = 'li__nota';
-        wrap.innerHTML = '<input type="text" data-nota-input="' + idx + '" placeholder="' + (notaPH[(BurgerHouse.cart.lineas[+idx] || {}).categoriaId] || 'Nota') + '" />';
-        no.replaceWith(wrap); wrap.querySelector('input').focus();
-        return;
+        const w = document.createElement('div'); w.className = 'li__nota';
+        w.innerHTML = '<input type="text" data-nota-input="' + idx + '" placeholder="' + (notaPH[(BurgerHouse.cart.lineas[+idx] || {}).categoriaId] || 'Nota') + '" />';
+        no.replaceWith(w); w.querySelector('input').focus(); return;
       }
-      const env = e.target.closest('#f-enviar');
-      if (env) { enviar(); return; }
+      if (e.target.closest('#f-enviar')) { enviar(); return; }
     });
-    d.addEventListener('change', (e) => {
-      if (e.target.name === 'entrega') {
-        const dir = $('#campo-dir'); if (dir) { dir.hidden = e.target.value !== 'domicilio'; if (!dir.hidden) $('#f-direccion').focus(); }
-        syncEntrega();
-      }
+    ov.addEventListener('change', (e) => {
+      if (e.target.name === 'entrega') { const d = $('#campo-dir'); if (d) { d.hidden = e.target.value !== 'domicilio'; if (!d.hidden) $('#f-direccion').focus(); } syncEntrega(); }
       const ni = e.target.closest('[data-nota-input]');
       if (ni) BurgerHouse.cart.updateNota(+ni.getAttribute('data-nota-input'), ni.value);
     });
-    d.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && e.target.matches('[data-nota-input]')) { e.preventDefault(); e.target.blur(); }
-    });
+    ov.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('[data-nota-input]')) { e.preventDefault(); e.target.blur(); } });
+    $('#orden-back').addEventListener('click', () => setVista('categorias'));
+    $('#orden-close').addEventListener('click', cerrarOrden);
+  }
+
+  function syncEntrega() {
+    document.querySelectorAll('.entrega__op').forEach((op) => { const r = op.querySelector('input'); op.classList.toggle('is-sel', !!(r && r.checked)); });
   }
 
   function enviar() {
-    const tipo = ($('#drawer input[name="entrega"]:checked') || {}).value || 'recoger';
+    const tipo = ($('#orden input[name="entrega"]:checked') || {}).value || 'recoger';
     const direccion = (($('#f-direccion') || {}).value || '').trim();
     const nombre = (($('#f-nombre') || {}).value || '').trim();
     if (tipo === 'domicilio' && !direccion) { const el = $('#f-direccion'); el.focus(); el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), 500); return; }
     if (!nombre) { const el = $('#f-nombre'); el.focus(); el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), 500); return; }
-    const entrega = { tipo, direccion, nombre };
-    const url = BurgerHouse.whatsapp.urlPedido(entrega);
+    const url = BurgerHouse.whatsapp.urlPedido({ tipo, direccion, nombre });
     if (!url) return;
     window.open(url, '_blank');
     mostrarExito(url);
@@ -252,54 +302,89 @@ BurgerHouse.ui = (function () {
   function mostrarExito(url) {
     mostrandoExito = true;
     BurgerHouse.cart.clear();
-    const cnt = $('#drawer-count'); if (cnt) cnt.textContent = '';
-    $('#drawer-foot').innerHTML = '';
-    $('#drawer-body').innerHTML =
-      '<div class="exito">' +
-        '<div class="exito__check" aria-hidden="true">✓</div>' +
-        '<h3>¡Pedido enviado!</h3>' +
+    $('#orden-back').hidden = true;
+    $('#orden-title').textContent = '¡Listo!';
+    $('#orden-foot').innerHTML = '';
+    $('#orden-body').innerHTML =
+      '<div class="ov-exito"><div class="ov-exito__check" aria-hidden="true">✓</div>' +
+        '<h2 class="display">¡Pedido enviado!</h2>' +
         '<p>Se abrió WhatsApp con tu pedido. Solo tócale <b>enviar</b> ahí para confirmarlo.</p>' +
-        (url ? '<button class="link" type="button" id="ex-reenviar" style="justify-self:center">¿No se abrió? Reenviar <span aria-hidden="true">→</span></button>' : '') +
-        '<div class="exito__acciones">' +
-          '<button class="btn btn--ink" type="button" id="ex-cerrar">Listo</button>' +
-        '</div>' +
-      '</div>';
+        (url ? '<button class="link" type="button" id="ex-reenviar">¿No se abrió? Reenviar <span aria-hidden="true">→</span></button>' : '') +
+        '<button class="btn btn--red btn--full" type="button" id="ex-cerrar">Listo</button></div>';
     if (url) $('#ex-reenviar').addEventListener('click', () => window.open(url, '_blank'));
-    $('#ex-cerrar').addEventListener('click', () => { mostrandoExito = false; cerrarDrawer(); });
+    $('#ex-cerrar').addEventListener('click', () => { mostrandoExito = false; cerrarOrden(); });
   }
 
   /* ============================================================
-     3 · Cartbar flotante
+     Botón flotante + nav
      ============================================================ */
-  function actualizaCartbar() {
-    const bar = $('#cartbar');
-    const label = $('#cartbar-label');
+  function actualizaFab() {
     const count = BurgerHouse.cart.count();
-    const drawerOpen = $('#drawer').classList.contains('is-open');
-    if (label) label.innerHTML = 'Ver mi pedido <span class="cartbar__sep">·</span> <span class="cartbar__total">' + peso(BurgerHouse.cart.total()) + '</span> <span class="cartbar__n">' + count + '</span>';
-    const visible = count > 0 && !drawerOpen;
-    bar.classList.toggle('is-visible', visible);
-    bar.setAttribute('aria-hidden', visible ? 'false' : 'true');
-    // Botón "Ver pedido" del nav superior (acceso siempre visible arriba)
-    const navCart = $('#nav-cart');
-    const navOrdenar = $('#nav-ordenar');
-    if (navCart) {
-      navCart.hidden = count === 0;
-      const n = $('#nav-cart-n'); if (n) n.textContent = count;
-    }
-    if (navOrdenar) navOrdenar.style.display = count > 0 ? 'none' : '';
+    const fabTxt = $('#fab-txt');
+    if (fabTxt) fabTxt.textContent = count > 0 ? ('Ver pedido · ' + peso(BurgerHouse.cart.total())) : 'Arma tu pedido';
+    const fab = $('#fab');
+    if (fab) fab.classList.toggle('fab--has', count > 0);
+    // insignia de cantidad en el fab
+    let n = $('#fab .fab__n');
+    if (count > 0) {
+      if (!n) { n = document.createElement('span'); n.className = 'fab__n'; fab.appendChild(n); }
+      n.textContent = count;
+    } else if (n) { n.remove(); }
+    // nav
+    const navCart = $('#nav-cart'); const navOrd = $('#nav-ordenar');
+    if (navCart) { navCart.hidden = count === 0; const nn = $('#nav-cart-n'); if (nn) nn.textContent = count; }
+    if (navOrd) navOrd.style.display = count > 0 ? 'none' : '';
   }
-  function pulsoCartbar() {
-    const bar = $('#cartbar');
-    if (!bar.classList.contains('is-visible')) return;
-    bar.classList.add('is-pulse');
-    setTimeout(() => bar.classList.remove('is-pulse'), 430);
+  function pulsoFab() {
+    const fab = $('#fab');
+    if (!fab) return;
+    fab.classList.remove('is-pulse'); void fab.offsetWidth; fab.classList.add('is-pulse');
+  }
+  function abrirDesdeFab() { abrirOrden(BurgerHouse.cart.count() > 0 ? 'resumen' : 'categorias'); }
+
+  /* ---------- Hero: palabra que rota ---------- */
+  function initHeroRotator() {
+    const el = $('#hero-rot');
+    if (!el) return;
+    const palabras = ['una burger', 'unas papas', 'una pizza', 'todo junto'];
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let i = 0;
+    setInterval(() => {
+      el.classList.add('is-out');
+      setTimeout(() => { i = (i + 1) % palabras.length; el.textContent = palabras[i]; el.classList.remove('is-out'); }, 300);
+    }, 2600);
+  }
+
+  /* ---------- header sólido al hacer scroll ---------- */
+  function initHeader() {
+    const header = $('#masthead'); const hero = $('.hero');
+    if (!header) return;
+    const onScroll = () => { const lim = hero ? hero.offsetHeight - 80 : 60; header.classList.toggle('is-scrolled', window.scrollY > lim); };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll); onScroll();
+  }
+
+  /* ---------- eventos (paquetes) ---------- */
+  function renderEventos() {
+    const cont = $('#eventos-grid');
+    if (!cont) return;
+    cont.innerHTML = BurgerHouse.EVENTOS.map((p) =>
+      '<article class="paquete">' +
+        '<div class="paquete__info"><div class="paquete__top">' +
+          '<span class="paquete__nombre">Paquete ' + esc(p.nombre) + '<small>' + p.personas + ' personas</small></span>' +
+          '<span class="paquete__precio">' + num(p.precio) + '</span></div>' +
+          '<div class="paquete__incluye">' + p.incluye.map((x) => '<span>' + esc(x) + '</span>').join('') + '</div></div>' +
+        '<div class="paquete__cta">' + (p.destacado ? '<span class="paquete__badge">' + esc(p.destacado) + '</span> ' : '') +
+          '<button class="link" type="button" data-evento="' + esc(p.nombre) + '">Cotizar por WhatsApp <span aria-hidden="true">→</span></button></div>' +
+      '</article>'
+    ).join('');
+    cont.addEventListener('click', (e) => { const b = e.target.closest('[data-evento]'); if (b) BurgerHouse.whatsapp.cotizarEvento(b.getAttribute('data-evento')); });
   }
 
   /* ---------- focus trap ---------- */
   function trapFocus(container) {
     container.onkeydown = (e) => {
-      if (e.key === 'Escape') { cerrarDrawer(); return; }
+      if (e.key === 'Escape') { cerrarOrden(); return; }
       if (e.key !== 'Tab') return;
       const foc = container.querySelectorAll('button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
       if (!foc.length) return;
@@ -309,89 +394,49 @@ BurgerHouse.ui = (function () {
     };
   }
 
-  /* ---------- reveal on scroll ---------- */
-  function initReveal() {
-    if (!('IntersectionObserver' in window)) { document.querySelectorAll('.reveal').forEach((r) => r.classList.add('is-in')); return; }
-    const io = new IntersectionObserver((ents) => {
-      ents.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('is-in'); io.unobserve(en.target); } });
-    }, { rootMargin: '0px 0px -8% 0px', threshold: .06 });
-    document.querySelectorAll('.reveal').forEach((r) => io.observe(r));
-  }
-
-  /* ---------- eventos (paquetes) ---------- */
-  function renderEventos() {
-    const cont = $('#eventos-grid');
-    if (!cont) return;
-    cont.innerHTML = BurgerHouse.EVENTOS.map((p) =>
-      '<article class="paquete">' +
-        '<div class="paquete__info">' +
-          '<div class="paquete__top">' +
-            '<span class="paquete__nombre">Paquete ' + esc(p.nombre) + '<small>' + p.personas + ' personas</small></span>' +
-            '<span class="paquete__precio">' + num(p.precio) + '</span>' +
-          '</div>' +
-          '<div class="paquete__incluye">' + p.incluye.map((x) => '<span>' + esc(x) + '</span>').join('') + '</div>' +
-        '</div>' +
-        '<div class="paquete__cta">' + (p.destacado ? '<span class="paquete__badge">' + esc(p.destacado) + '</span> ' : '') +
-          '<button class="link" type="button" data-evento="' + esc(p.nombre) + '">Cotizar por WhatsApp <span aria-hidden="true">→</span></button>' +
-        '</div>' +
-      '</article>'
-    ).join('');
-    cont.addEventListener('click', (e) => { const b = e.target.closest('[data-evento]'); if (b) BurgerHouse.whatsapp.cotizarEvento(b.getAttribute('data-evento')); });
-  }
-
   /* ---------- init ---------- */
-  /* ---------- header transparente → sólido al hacer scroll ---------- */
-  function initHeader() {
-    const header = $('.masthead');
-    const hero = $('.hero');
-    if (!header) return;
-    function onScroll() {
-      const limite = hero ? hero.offsetHeight - 80 : 60;
-      header.classList.toggle('is-scrolled', window.scrollY > limite);
-    }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    onScroll();
-  }
-
   function init() {
+    renderAntojo();
     renderMenu();
     renderEventos();
-    bindDrawer();
-    initReveal();
+    bindOrden();
+    initHeroRotator();
     initHeader();
 
-    // Añadir desde la carta (delegado)
+    // "Añadir" en la carta de la página → agrega y avisa (sin salir de la página)
     $('#menu-cats').addEventListener('click', (e) => {
       const b = e.target.closest('[data-add]');
       if (!b) return;
       const [c, i] = b.getAttribute('data-add').split(':');
-      const it = buscaItem(c, i);
-      if (!it) return;
-      BurgerHouse.cart.add({ categoriaId: c, categoriaNombre: nombreCat(c), itemId: i, nombre: it.nombre, precio: it.precio, cantidad: 1, nota: '' });
-      pulsoCartbar();
+      const it = item(c, i);
+      if (it) { BurgerHouse.cart.add({ categoriaId: c, categoriaNombre: cat(c).nombre, itemId: i, nombre: it.nombre, precio: it.precio, cantidad: 1, nota: '' }); pulsoFab(); }
     });
 
-    // Cambios del carrito
+    // Cambios del carrito → refrescar todo lo visible
     BurgerHouse.cart.onChange(() => {
       refreshAddCounts();
-      actualizaCartbar();
-      if ($('#drawer').classList.contains('is-open')) { renderDrawerBody(); updateFootDynamic(); }
+      actualizaFab();
+      if ($('#orden').classList.contains('is-open') && !mostrandoExito) {
+        if (vista === 'items') { refreshItemCtrls(); renderFootOrden(); }
+        else if (vista === 'resumen') { renderResumen(); renderFootOrden(); }
+        else renderFootOrden();
+      }
     });
 
-    // Abrir/cerrar drawer
-    $('#cartbar-btn').addEventListener('click', abrirDrawer);
-    const navCart = $('#nav-cart'); if (navCart) navCart.addEventListener('click', abrirDrawer);
-    $('#drawer-close').addEventListener('click', cerrarDrawer);
-    $('#scrim').addEventListener('click', cerrarDrawer);
+    // Aperturas
+    $('#fab').addEventListener('click', abrirDesdeFab);
+    document.querySelectorAll('[data-abrir-orden]').forEach((b) => b.addEventListener('click', () => abrirOrden('categorias')));
+    const navOrd = $('#nav-ordenar'); if (navOrd) navOrd.addEventListener('click', () => abrirOrden('categorias'));
+    const navCart = $('#nav-cart'); if (navCart) navCart.addEventListener('click', () => abrirOrden('resumen'));
 
-    // Scroll suave
     document.querySelectorAll('[data-scroll]').forEach((a) =>
       a.addEventListener('click', (e) => { e.preventDefault(); const t = document.querySelector(a.getAttribute('data-scroll')); if (t) t.scrollIntoView({ behavior: 'smooth' }); }));
+
+    actualizaFab();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 
-  return { abrirDrawer, cerrarDrawer };
+  return { abrirOrden, cerrarOrden };
 })();

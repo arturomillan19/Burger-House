@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#F4EFE5" />
+  <meta name="theme-color" content="#17120F" />
   <meta name="description" content="Burger House · Hamburguesas, entradas y pizzas en Guaymas, Sonora. Sabor de cadena, calidad hecha en casa. Arma tu pedido y mándalo por WhatsApp." />
   <title>Burger House · Guaymas</title>
 
@@ -11,7 +11,7 @@
 
   <!-- Fuentes auto-alojadas (ver css/styles.css). Sin dependencias externas. -->
   <link rel="preload" href="fonts/hanken-grotesk-var.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=5" />
+  <link rel="stylesheet" href="css/styles.css?v=6" />
 
   <!-- Logo monolínea reutilizable -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -28,7 +28,7 @@
 <body>
 
   <!-- NAV -->
-  <header class="masthead">
+  <header class="masthead" id="masthead">
     <div class="wrap masthead__inner">
       <a href="#top" class="brand" aria-label="Burger House — inicio">
         <svg class="brand__mark" aria-hidden="true"><use href="#bh-burger"/></svg>
@@ -36,7 +36,7 @@
       </a>
       <div class="masthead__right">
         <span class="masthead__meta">Guaymas, Son. · 6:30–10:30 pm</span>
-        <a href="#menu" class="masthead__cta" id="nav-ordenar" data-scroll="#menu">Ordenar</a>
+        <button class="masthead__cta" id="nav-ordenar" type="button">Ordenar</button>
         <button class="masthead__cart" id="nav-cart" type="button" hidden aria-label="Ver mi pedido">
           Ver pedido <span class="masthead__cart-n" id="nav-cart-n">0</span>
         </button>
@@ -51,52 +51,51 @@
       <div class="wrap hero__inner">
         <div class="hero__texto">
           <p class="eyebrow hero__eyebrow">Guaymas, Sonora · Est. 2024</p>
-          <h1 class="display hero__title">La hamburguesa <em>como en casa.</em></h1>
+          <h1 class="hero__title">
+            <span class="hero__fixed">Se me antoja</span>
+            <span class="hero__rot" aria-live="polite"><span class="hero__rot-word" id="hero-rot">una burger</span></span>
+          </h1>
           <p class="hero__lede">
-            Pan brioche, carne jugosa y queso americano. El sabor de una cadena grande,
-            hecho con ingredientes de calidad y sazón de casa.
+            Sabor de cadena grande, con ingredientes de calidad y sazón de casa.
+            Arma tu pedido en segundos y mándalo por WhatsApp.
           </p>
           <div class="hero__cta">
-            <button class="btn btn--red" type="button" data-scroll="#menu">Ver la carta</button>
-            <button class="btn btn--cream" type="button" data-scroll="#eventos">Paquetes para eventos</button>
-          </div>
-          <div class="hero__meta">
-            <span><b>Recoge</b> en el local</span>
-            <span><b>o a domicilio</b></span>
-            <span>Pide por <b>WhatsApp</b></span>
+            <button class="btn btn--red btn--lg" type="button" data-abrir-orden>Arma tu pedido</button>
+            <button class="btn btn--cream" type="button" data-scroll="#menu">Ver la carta</button>
           </div>
         </div>
       </div>
-      <span class="hero__scroll" aria-hidden="true">La carta</span>
+      <span class="hero__scrolldown" aria-hidden="true">desliza</span>
     </section>
 
-    <div class="checker" aria-hidden="true"></div>
+    <!-- Marquee (cinta en movimiento) -->
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee__track">
+        <span>Burgers</span><span class="marquee__dot">●</span><span>Pizzas artesanales</span><span class="marquee__dot">●</span><span>Papas &amp; entradas</span><span class="marquee__dot">●</span><span>A domicilio</span><span class="marquee__dot">●</span><span>Hecho en casa</span><span class="marquee__dot">●</span>
+        <span>Burgers</span><span class="marquee__dot">●</span><span>Pizzas artesanales</span><span class="marquee__dot">●</span><span>Papas &amp; entradas</span><span class="marquee__dot">●</span><span>A domicilio</span><span class="marquee__dot">●</span><span>Hecho en casa</span><span class="marquee__dot">●</span>
+      </div>
+    </div>
 
-    <!-- INTRO / calidad -->
-    <section class="intro">
-      <div class="wrap intro__inner">
-        <p class="intro__lead">Sabor de cadena grande, con la <em>calidad y el cariño</em> de algo hecho en casa.</p>
-        <div class="intro__cols">
-          <div class="intro__col">
-            <h3>Ingredientes</h3>
-            <p>Pan brioche, carne de calidad, queso americano y vegetales frescos. Nada de atajos.</p>
-          </div>
-          <div class="intro__col">
-            <h3>Al momento</h3>
-            <p>Burgers, entradas y pizza de masa delgada artesanal, preparadas cuando las pides.</p>
-          </div>
+    <!-- ¿Qué se te antoja? — acceso guiado directo -->
+    <section class="sec wrap antojo" id="antojo">
+      <div class="sec-head">
+        <div class="sec-head__t">
+          <span class="eyebrow">Ordena en 3 toques</span>
+          <h2 class="display">¿Qué se te <em>antoja?</em></h2>
+          <p>Elige y arma tu pedido. Nosotros lo preparamos al momento.</p>
         </div>
       </div>
+      <div class="antojo-grid" id="antojo-grid"><!-- inyectado por js/ui.js --></div>
     </section>
 
-    <!-- MENÚ -->
+    <!-- MENÚ (para ver todo con calma) -->
     <section class="menu" id="menu">
       <div class="wrap">
         <div class="sec-head">
           <div class="sec-head__t">
-            <span class="eyebrow">La carta</span>
+            <span class="eyebrow">La carta completa</span>
             <h2 class="display">El <em>menú</em></h2>
-            <p>Toca “Añadir” en lo que se te antoje. Tu pedido se arma abajo y lo mandas por WhatsApp.</p>
+            <p>Toca “Añadir” en lo que se te antoje, o usa el botón <b>Arma tu pedido</b> para ir guiado.</p>
           </div>
         </div>
         <div id="menu-cats"><!-- inyectado por js/ui.js --></div>
@@ -157,27 +156,26 @@
     </div>
   </footer>
 
-  <!-- Carrito: botón flotante -->
-  <div class="cartbar" id="cartbar" aria-hidden="true">
-    <button class="cartbar__btn" type="button" id="cartbar-btn">
-      <span id="cartbar-label">Ver mi pedido</span>
-    </button>
+  <!-- Botón flotante SIEMPRE visible -->
+  <button class="fab" id="fab" type="button" aria-label="Arma tu pedido">
+    <svg class="fab__ico" aria-hidden="true"><use href="#bh-burger"/></svg>
+    <span class="fab__txt" id="fab-txt">Arma tu pedido</span>
+  </button>
+
+  <!-- ===== FLUJO GUIADO (overlay a pantalla completa) ===== -->
+  <div class="orden" id="orden" role="dialog" aria-modal="true" aria-label="Arma tu pedido" aria-hidden="true">
+    <header class="orden__top">
+      <button class="orden__back" id="orden-back" type="button" hidden><span aria-hidden="true">←</span> <span class="orden__back-txt">Categorías</span></button>
+      <span class="orden__title" id="orden-title">Arma tu pedido</span>
+      <button class="orden__close" id="orden-close" type="button" aria-label="Cerrar">×</button>
+    </header>
+    <div class="orden__body" id="orden-body"><!-- inyectado por js/ui.js --></div>
+    <footer class="orden__foot" id="orden-foot"><!-- inyectado por js/ui.js --></footer>
   </div>
 
-  <!-- Carrito: scrim + drawer -->
-  <div class="scrim" id="scrim" aria-hidden="true"></div>
-  <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Tu pedido" aria-hidden="true">
-    <header class="drawer__head">
-      <h2 class="drawer__title">Tu pedido <small id="drawer-count"></small></h2>
-      <button class="drawer__close" type="button" id="drawer-close" aria-label="Cerrar">×</button>
-    </header>
-    <div class="drawer__body" id="drawer-body"><!-- inyectado por js/ui.js --></div>
-    <div class="drawer__foot" id="drawer-foot"><!-- inyectado por js/ui.js --></div>
-  </aside>
-
-  <script defer src="js/data.js?v=5"></script>
-  <script defer src="js/cart.js?v=5"></script>
-  <script defer src="js/whatsapp.js?v=5"></script>
-  <script defer src="js/ui.js?v=5"></script>
+  <script defer src="js/data.js?v=6"></script>
+  <script defer src="js/cart.js?v=6"></script>
+  <script defer src="js/whatsapp.js?v=6"></script>
+  <script defer src="js/ui.js?v=6"></script>
 </body>
 </html>
