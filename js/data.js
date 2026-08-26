@@ -66,14 +66,20 @@ BurgerHouse.MENU = [
       { id: 'pizza-italiana', nombre: 'Italiana', precio: 180, desc: 'Salsa de tomate, queso, peperoni, champiñón, cebolla y pimiento.', quita: ['champiñón', 'cebolla', 'pimiento', 'peperoni'] },
       { id: 'pizza-lombarda', nombre: 'Lombarda', precio: 180, desc: 'Salsa de tomate, queso, tocino y champiñón.', quita: ['champiñón', 'tocino'] },
       { id: 'pizza-margarita', nombre: 'Margarita', precio: 180, desc: 'Salsa de tomate, queso, tomate cherry, albahaca y aceite de oliva.', quita: ['tomate cherry', 'albahaca'] },
+      { id: 'pizza-hawaiana', nombre: 'Hawaiana', precio: 180, desc: 'Salsa de tomate, queso, piña y jamón.', quita: ['piña', 'jamón'] },
+      { id: 'pizza-salchicha-especial', nombre: 'Salchicha Especial', precio: 180, desc: 'Salsa de tomate, queso, salchicha italiana, tocino, cebolla, champiñón y pimiento verde.', quita: ['salchicha', 'tocino', 'cebolla', 'champiñón', 'pimiento verde'] },
     ],
   },
 ];
 
-/* Bebidas — aguas frescas y refrescos, $35 c/u. */
+/* Bebidas — según el menú oficial. */
 BurgerHouse.BEBIDAS = [
-  { id: 'agua-fresca', nombre: 'Agua fresca', precio: 35, desc: 'Sabor del día' },
-  { id: 'refresco', nombre: 'Refresco', precio: 35, desc: 'Varios sabores' },
+  { id: 'coca-cola', nombre: 'Coca Cola', precio: 35 },
+  { id: 'pepsi', nombre: 'Pepsi', precio: 30 },
+  { id: 'manzanita', nombre: 'Manzanita', precio: 30 },
+  { id: 'naranja', nombre: 'Naranja', precio: 30 },
+  { id: '7up', nombre: '7UP', precio: 30 },
+  { id: 'jamaica', nombre: 'Jamaica', precio: 35, desc: 'Agua fresca' },
 ];
 
 /* Paquetes para eventos (cotización por WhatsApp). Datos de sus historias de Instagram. */

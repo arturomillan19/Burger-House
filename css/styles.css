@@ -149,22 +149,22 @@ a { color: inherit; }
 @media (max-width: 720px) { .masthead__meta { display: none; } .brand__word { font-size: 1.02rem; letter-spacing: .12em; } }
 
 /* ================= HERO (foto de producto a sangre completa) ================= */
-.hero { position: relative; min-height: min(92vh, 800px); min-height: min(92svh, 800px); display: flex; align-items: flex-end; overflow: hidden; background: #17120F; color: var(--cream); }
-.hero__bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 34%; z-index: 0; }
+.hero { position: relative; min-height: min(92vh, 800px); min-height: min(92svh, 800px); display: flex; align-items: flex-end; overflow: hidden; background: #cf1d1a; color: var(--cream); }
+.hero__bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 66% 48%; z-index: 0; }
 .hero::after {
   content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(23,18,15,.62) 0%, rgba(23,18,15,0) 26%, rgba(23,18,15,.10) 50%, rgba(23,18,15,.72) 82%, rgba(23,18,15,.94) 100%),
-    linear-gradient(90deg, rgba(23,18,15,.55) 0%, rgba(23,18,15,0) 58%);
+    linear-gradient(90deg, rgba(116,22,16,.68) 0%, rgba(116,22,16,.2) 40%, rgba(116,22,16,0) 66%),
+    linear-gradient(180deg, rgba(116,22,16,.3) 0%, rgba(116,22,16,0) 28%, rgba(116,22,16,.52) 100%);
 }
 .hero__inner { position: relative; z-index: 2; width: 100%; padding-block: clamp(2.5rem, 12vh, 6.5rem); }
 .hero__texto { max-width: 36rem; }
-.hero__eyebrow { color: #F1D9C7; margin-bottom: var(--sp-3); }
-.hero__eyebrow::before { background: var(--red-bright); }
+.hero__eyebrow { color: #FDEFE3; margin-bottom: var(--sp-3); }
+.hero__eyebrow::before { background: #FDEFE3; }
 .hero__title { font-family: var(--font-impact); line-height: .92; max-width: 16ch; text-transform: uppercase; }
 .hero__fixed { display: block; font-family: var(--font-impact); font-weight: 400; font-size: clamp(1.7rem, 5vw, 3rem); letter-spacing: .012em; color: var(--cream); }
 .hero__rot { display: block; }
-.hero__rot-word { display: inline-block; font-family: var(--font-impact); font-weight: 400; font-size: var(--fs-hero); line-height: .9; letter-spacing: .006em; color: var(--red-bright); text-shadow: 0 3px 30px rgba(0,0,0,.45); transition: opacity .28s var(--ease), transform .28s var(--ease); }
+.hero__rot-word { display: inline-block; font-family: var(--font-impact); font-weight: 400; font-size: var(--fs-hero); line-height: .9; letter-spacing: .006em; color: var(--cream); text-shadow: 0 3px 24px rgba(90,16,12,.55); transition: opacity .28s var(--ease), transform .28s var(--ease); }
 .hero__rot-word.is-out { opacity: 0; transform: translateY(-.3em); }
 .hero__lede { margin-top: var(--sp-3); max-width: 38ch; font-size: var(--fs-lead); color: rgba(247,242,233,.92); }
 .hero__cta { margin-top: var(--sp-4); display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; }
@@ -172,7 +172,7 @@ a { color: inherit; }
 .hero__chips { margin-top: var(--sp-4); display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
 .hero__chips-lbl { font-size: .82rem; letter-spacing: .03em; color: rgba(247,242,233,.72); margin-right: .15rem; }
 .hero__chip { background: rgba(252,248,241,.12); color: var(--cream); border: 1px solid rgba(252,248,241,.38); border-radius: 40px; padding: .5rem 1rem; min-height: 42px; font-family: var(--font-body); font-weight: 600; font-size: .9rem; cursor: pointer; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); transition: background .2s var(--ease), border-color .2s var(--ease), transform .12s var(--ease); }
-.hero__chip:hover { background: var(--red); border-color: var(--red); transform: translateY(-1px); }
+.hero__chip:hover { background: var(--cream); color: var(--red); border-color: var(--cream); transform: translateY(-1px); }
 .hero__chip:focus-visible { outline: 2px solid var(--cream); outline-offset: 2px; }
 .hero__meta { margin-top: var(--sp-4); padding-top: var(--sp-3); border-top: 1px solid rgba(247,242,233,.24); display: flex; flex-wrap: wrap; gap: 1.2rem; font-size: .8rem; letter-spacing: .04em; text-transform: uppercase; color: rgba(247,242,233,.74); }
 .hero__meta b { color: var(--cream); font-weight: 700; }
@@ -367,6 +367,9 @@ a { color: inherit; }
 .btn--lg { padding: 1.05rem 2.1rem; min-height: 56px; font-size: 1.05rem; }
 .btn--xl { padding: 1.15rem 2.3rem; min-height: 60px; font-size: 1.15rem; }
 .btn--full { width: 100%; }
+/* CTA sólido crema para resaltar sobre el hero rojo */
+.btn--onred { background: var(--cream); color: var(--red); border-color: var(--cream); box-shadow: 0 14px 30px -12px rgba(70,12,9,.6); }
+.btn--onred:hover { background: #fff; color: var(--red-deep); transform: translateY(-2px); box-shadow: 0 18px 34px -14px rgba(70,12,9,.7); }
 
 /* ================= MARQUEE (cinta en movimiento) ================= */
 .marquee { background: var(--red); color: var(--cream); overflow: hidden; white-space: nowrap; border-block: 1px solid var(--red-deep); }
