@@ -12,13 +12,14 @@ BurgerHouse.config = {
   tel: '+16232399551',
   instagram: 'https://www.instagram.com/burgerhousegyms/',
   direccion: 'Blvd. Luis Encinas, Guaymas, Sonora',
-  // CONFIRMAR con el negocio (tomado de sus historias: "abierto 6:30–10:30 pm").
-  horario: 'Abierto · 6:30 pm – 10:30 pm',
+  dias: 'Jueves a Domingo',
+  horario: 'Jue a Dom · 6:30 – 10:30 pm',
   // Imagen del menú completo que abre el botón "VER MENÚ" (opcional; deja null si no hay).
   menuImg: null,
   // Promo opcional de conversión. Deja en null para desactivarla.
-  // Ej: { umbral: 350, regalo: { nombre: 'Papas fritas — cortesía', precio: 0 } }
   promo: null,
+  // Promo maquila: descuento presentando credencial. { activa, porcentaje }
+  promoMaquila: { activa: true, porcentaje: 10 },
 };
 
 /* MENU: bandas de la carta. Cada item es pedible (id estable = llave en el carrito).
@@ -32,7 +33,7 @@ BurgerHouse.MENU = [
     img: 'Media/burgers.jpg',
     // Opciones extra que aplican a toda la categoría (se muestran al personalizar).
     extras: [
-      { id: 'carne-extra', nombre: 'Carne extra', precio: 30 },
+      { id: 'carne-extra', nombre: 'Carne extra', precio: 30, max: 3 },
     ],
     items: [
       { id: 'cheese-burger', nombre: 'Cheese Burger', precio: 140, desc: 'Pan brioche, aderezo, carne con queso americano.', quita: ['aderezo'] },

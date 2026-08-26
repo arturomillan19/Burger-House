@@ -91,7 +91,6 @@ BurgerHouse.ui = (function () {
     if (!cont) return;
     cont.innerHTML = categorias().map((c) =>
       '<button class="acard" type="button" data-cat-abrir="' + c.id + '">' +
-        (c.img ? '<img class="acard__img" src="' + c.img + '" alt="" loading="lazy" onerror="this.remove()" />' : '') +
         '<span class="acard__ico" aria-hidden="true">' + (ICONO[c.id] || '🍽️') + '</span>' +
         '<span class="acard__body"><span class="acard__name">' + esc(c.nombre) + '</span>' +
           '<span class="acard__meta">desde ' + peso(desde(c)) + '</span></span>' +
@@ -150,9 +149,9 @@ BurgerHouse.ui = (function () {
       '<div class="ov-head"><h2 class="display">¿Qué se te <em>antoja?</em></h2><p class="muted">Elige una categoría para empezar.</p></div>' +
       '<div class="ov-cats">' + categorias().map((c) =>
         '<button class="ovcat" type="button" data-ir-items="' + c.id + '">' +
-          (c.img ? '<img class="ovcat__img" src="' + c.img + '" alt="" loading="lazy" onerror="this.remove()" />' : '<span class="ovcat__ph" aria-hidden="true"></span>') +
           '<span class="ovcat__ico" aria-hidden="true">' + (ICONO[c.id] || '🍽️') + '</span>' +
           '<span class="ovcat__t"><span class="ovcat__name">' + esc(c.nombre) + '</span><span class="ovcat__meta">' + c.items.length + ' opciones · desde ' + peso(desde(c)) + '</span></span>' +
+          '<span class="ovcat__go" aria-hidden="true">→</span>' +
         '</button>'
       ).join('') + '</div>';
   }
@@ -192,33 +191,45 @@ BurgerHouse.ui = (function () {
     });
   }
 
+  function liHTML(l, idx) {
+    const sub = l.regalo ? 'Gratis' : peso(l.precio * l.cantidad);
+    const nota = l.regalo ? '' : (l.nota
+      ? '<div class="li__nota"><input type="text" value="' + esc(l.nota) + '" data-nota-input="' + idx + '" placeholder="' + (notaPH[l.categoriaId] || 'Nota') + '" /></div>'
+      : '<button class="li__nota-toggle" type="button" data-nota-open="' + idx + '">+ Agregar nota</button>');
+    return '<div class="li' + (l.regalo ? ' li--regalo' : '') + '">' +
+      '<div class="li__top"><span class="li__nombre">' + esc(l.nombre) + '</span><span class="li__precio">' + sub + '</span></div>' +
+      (l.regalo ? '<div class="li__row"><span class="muted" style="font-size:.86rem">Cortesía 🎉</span></div>' :
+        '<div class="li__row"><div class="qtl qtl--sm">' +
+          '<button class="qtl__b" type="button" data-qty="-1" data-idx="' + idx + '" aria-label="Menos">−</button>' +
+          '<span class="qtl__n">' + l.cantidad + '</span>' +
+          '<button class="qtl__b" type="button" data-qty="1" data-idx="' + idx + '" aria-label="Más">+</button></div>' +
+          '<button class="li__quitar" type="button" data-remove="' + idx + '">Quitar</button></div>' + nota) +
+    '</div>';
+  }
+  function renderLineas() { const c = $('#ov-lineas'); if (c) c.innerHTML = BurgerHouse.cart.lineas.map((l, idx) => liHTML(l, idx)).join(''); }
+  function drinksHTML() {
+    return '<div class="ov-drinks"><p class="ov-drinks__lbl">¿Algo de tomar? 🥤</p><div class="ov-drinks__row">' +
+      BurgerHouse.BEBIDAS.map((b) => '<button class="drink" type="button" data-drink="' + b.id + '">' + esc(b.nombre) +
+        ' <span class="drink__p">' + peso(b.precio) + '</span><span class="drink__n" data-drink-n="' + b.id + '" hidden></span></button>').join('') +
+    '</div></div>';
+  }
+  function refreshDrinks() {
+    BurgerHouse.BEBIDAS.forEach((b) => { const el = $('[data-drink-n="' + b.id + '"]'); if (!el) return; const n = qtyDe('bebidas', b.id); if (n > 0) { el.textContent = n; el.hidden = false; } else { el.hidden = true; } });
+  }
   function renderResumen() {
     const body = $('#orden-body');
-    const lineas = BurgerHouse.cart.lineas;
     if (mostrandoExito) return;
-    if (!lineas.length) {
+    if (!BurgerHouse.cart.lineas.length) {
       body.innerHTML = '<div class="ov-vacio"><span aria-hidden="true">🛒</span><p>Tu pedido está vacío.<br>Vuelve y elige algo rico 🍔</p>' +
         '<button class="btn btn--red" type="button" data-ir-cats>Ver categorías</button></div>';
       return;
     }
+    const pm = BurgerHouse.config.promoMaquila;
     body.innerHTML =
       '<div class="ov-head ov-head--sm"><h2 class="display">Tu <em>pedido</em></h2></div>' +
-      '<div class="ov-lineas">' + lineas.map((l, idx) => {
-        const sub = l.regalo ? 'Gratis' : peso(l.precio * l.cantidad);
-        const nota = l.regalo ? '' : (l.nota
-          ? '<div class="li__nota"><input type="text" value="' + esc(l.nota) + '" data-nota-input="' + idx + '" placeholder="' + (notaPH[l.categoriaId] || 'Nota') + '" /></div>'
-          : '<button class="li__nota-toggle" type="button" data-nota-open="' + idx + '">+ Agregar nota</button>');
-        return '<div class="li' + (l.regalo ? ' li--regalo' : '') + '">' +
-          '<div class="li__top"><span class="li__nombre">' + esc(l.nombre) + '</span><span class="li__precio">' + sub + '</span></div>' +
-          (l.regalo ? '<div class="li__row"><span class="muted" style="font-size:.86rem">Cortesía 🎉</span></div>' :
-            '<div class="li__row"><div class="qtl qtl--sm">' +
-              '<button class="qtl__b" type="button" data-qty="-1" data-idx="' + idx + '" aria-label="Menos">−</button>' +
-              '<span class="qtl__n">' + l.cantidad + '</span>' +
-              '<button class="qtl__b" type="button" data-qty="1" data-idx="' + idx + '" aria-label="Más">+</button></div>' +
-              '<button class="li__quitar" type="button" data-remove="' + idx + '">Quitar</button></div>' + nota) +
-        '</div>';
-      }).join('') + '</div>' +
+      '<div class="ov-lineas" id="ov-lineas"></div>' +
       '<button class="ov-mas" type="button" data-ir-cats><span aria-hidden="true">+</span> Agregar algo más</button>' +
+      drinksHTML() +
       '<div class="ov-checkout">' +
         '<div class="entrega" role="radiogroup" aria-label="Entrega">' +
           '<label class="entrega__op"><input type="radio" name="entrega" value="recoger" checked> Recojo</label>' +
@@ -226,8 +237,28 @@ BurgerHouse.ui = (function () {
         '</div>' +
         '<div class="campo" id="campo-dir" hidden><input type="text" id="f-direccion" placeholder="Dirección de entrega" /></div>' +
         '<div class="campo"><input type="text" id="f-nombre" placeholder="¿A nombre de quién?" autocomplete="name" /></div>' +
+        ((pm && pm.activa) ? '<label class="maquila"><input type="checkbox" id="f-maquila" /> <span>🏭 Trabajo en maquila <small>(' + pm.porcentaje + '% presentando credencial)</small></span></label>' : '') +
       '</div>';
+    renderLineas();
+    refreshDrinks();
     syncEntrega();
+  }
+  function refreshResumen() {
+    if (mostrandoExito) return;
+    if (!BurgerHouse.cart.lineas.length || !$('#ov-lineas')) { renderResumen(); return; }
+    renderLineas();
+    refreshDrinks();
+  }
+  function updateTotalDisplay() {
+    const tb = $('#ov-total-b'); if (!tb) return;
+    const pm = BurgerHouse.config.promoMaquila;
+    const maq = !!(($('#f-maquila') || {}).checked);
+    const sub = BurgerHouse.cart.total();
+    const aplica = maq && pm && pm.activa;
+    const desc = aplica ? Math.round(sub * pm.porcentaje / 100) : 0;
+    tb.textContent = num(sub - desc);
+    const dl = $('#ov-descline'); const dv = $('#ov-desc');
+    if (dl) { dl.hidden = !aplica; if (dv) dv.textContent = '−' + peso(desc); }
   }
 
   function renderFootOrden() {
@@ -236,9 +267,11 @@ BurgerHouse.ui = (function () {
     const count = BurgerHouse.cart.count();
     if (vista === 'resumen') {
       foot.innerHTML = count > 0
-        ? '<div class="ov-total"><span>Total</span><b>' + num(BurgerHouse.cart.total()) + '</b></div>' +
+        ? '<div class="ov-descline" id="ov-descline" hidden><span>Descuento maquila</span><b id="ov-desc">−$0</b></div>' +
+          '<div class="ov-total"><span>Total</span><b id="ov-total-b">' + num(BurgerHouse.cart.total()) + '</b></div>' +
           '<button class="btn btn--red btn--full" type="button" id="f-enviar">Enviar por WhatsApp</button>'
         : '';
+      updateTotalDisplay();
       return;
     }
     // categorías / items: acceso al pedido si ya hay algo
@@ -275,6 +308,8 @@ BurgerHouse.ui = (function () {
       if (qty) { const idx = +qty.getAttribute('data-idx'); const l = BurgerHouse.cart.lineas[idx]; if (l) BurgerHouse.cart.updateCantidad(idx, l.cantidad + (+qty.getAttribute('data-qty'))); return; }
       const rm = e.target.closest('[data-remove]');
       if (rm) { BurgerHouse.cart.remove(+rm.getAttribute('data-remove')); return; }
+      const dr = e.target.closest('[data-drink]');
+      if (dr) { const id = dr.getAttribute('data-drink'); const b = BurgerHouse.BEBIDAS.find((x) => x.id === id); if (b) BurgerHouse.cart.add({ categoriaId: 'bebidas', categoriaNombre: 'Bebidas', itemId: id, nombre: b.nombre, precio: b.precio, cantidad: 1, nota: '' }); return; }
       const no = e.target.closest('[data-nota-open]');
       if (no) {
         const idx = no.getAttribute('data-nota-open');
@@ -286,6 +321,7 @@ BurgerHouse.ui = (function () {
     });
     ov.addEventListener('change', (e) => {
       if (e.target.name === 'entrega') { const d = $('#campo-dir'); if (d) { d.hidden = e.target.value !== 'domicilio'; if (!d.hidden) $('#f-direccion').focus(); } syncEntrega(); }
+      if (e.target.id === 'f-maquila') updateTotalDisplay();
       const ni = e.target.closest('[data-nota-input]');
       if (ni) BurgerHouse.cart.updateNota(+ni.getAttribute('data-nota-input'), ni.value);
     });
@@ -304,7 +340,8 @@ BurgerHouse.ui = (function () {
     const nombre = (($('#f-nombre') || {}).value || '').trim();
     if (tipo === 'domicilio' && !direccion) { const el = $('#f-direccion'); el.focus(); el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), 500); return; }
     if (!nombre) { const el = $('#f-nombre'); el.focus(); el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), 500); return; }
-    const url = BurgerHouse.whatsapp.urlPedido({ tipo, direccion, nombre });
+    const maquila = !!(($('#f-maquila') || {}).checked);
+    const url = BurgerHouse.whatsapp.urlPedido({ tipo, direccion, nombre, maquila });
     if (!url) return;
     window.open(url, '_blank');
     mostrarExito(url);
@@ -339,9 +376,10 @@ BurgerHouse.ui = (function () {
     cerrarSheet();
     lockScroll();
     const selSin = new Set();
-    const selExtra = new Set();
+    const selExtra = {};                 // id -> cantidad
     let qty = 1;
-    const extrasSum = () => [...selExtra].reduce((s, id) => { const x = extras.find((e) => e.id === id); return s + (x ? x.precio : 0); }, 0);
+    const extraInfo = (id) => extras.find((e) => e.id === id);
+    const extrasSum = () => Object.keys(selExtra).reduce((s, id) => { const x = extraInfo(id); return s + (x ? x.precio * selExtra[id] : 0); }, 0);
     const wrap = document.createElement('div');
     wrap.className = 'sheet-wrap';
     wrap.innerHTML =
@@ -352,9 +390,12 @@ BurgerHouse.ui = (function () {
         '<h3 class="sheet__title">' + esc(it.nombre) + '</h3>' +
         (it.desc ? '<p class="sheet__desc">' + esc(it.desc) + '</p>' : '') +
         (extras.length ?
-          '<div class="sheet__extras"><p class="sheet__lbl">¿Algo extra?</p><div class="chips">' +
-            extras.map((e) => '<button class="chip chip--add" type="button" data-extra="' + e.id + '">+ ' + esc(e.nombre) + ' <span class="chip__price">+' + peso(e.precio) + '</span></button>').join('') +
-          '</div></div>' : '') +
+          '<div class="sheet__extras"><p class="sheet__lbl">¿Algo extra?</p>' +
+            extras.map((e) => '<div class="extra-row"><span class="extra-row__t">' + esc(e.nombre) + ' <span class="chip__price">+' + peso(e.precio) + (e.max ? ' <small>· máx ' + e.max + '</small>' : '') + '</span></span>' +
+              '<div class="qtl qtl--sm"><button class="qtl__b" type="button" data-ex="-1" data-eid="' + e.id + '" aria-label="Menos">−</button>' +
+              '<span class="qtl__n" data-eqty="' + e.id + '">0</span>' +
+              '<button class="qtl__b" type="button" data-ex="1" data-eid="' + e.id + '" aria-label="Más">+</button></div></div>').join('') +
+          '</div>' : '') +
         (quita.length ?
           '<div class="sheet__quita"><p class="sheet__lbl">¿Le quitamos algo? <small>toca para quitar</small></p><div class="chips">' +
             quita.map((q) => '<button class="chip" type="button" data-sin="' + esc(q) + '">sin ' + esc(q) + '</button>').join('') +
@@ -375,12 +416,18 @@ BurgerHouse.ui = (function () {
     wrap.addEventListener('click', (e) => {
       if (e.target.closest('[data-cerrar]')) { cerrarSheet(); return; }
       const cc = e.target.closest('[data-c]'); if (cc) { qty = Math.max(1, qty + (+cc.getAttribute('data-c'))); refresh(); return; }
-      const ex = e.target.closest('[data-extra]');
-      if (ex) { const v = ex.getAttribute('data-extra'); if (selExtra.has(v)) { selExtra.delete(v); ex.classList.remove('is-on'); } else { selExtra.add(v); ex.classList.add('is-on'); } refresh(); return; }
+      const ex = e.target.closest('[data-ex]');
+      if (ex) {
+        const id = ex.getAttribute('data-eid'); const info = extraInfo(id); const mx = (info && info.max) || 9;
+        const nv = Math.min(mx, Math.max(0, (selExtra[id] || 0) + (+ex.getAttribute('data-ex'))));
+        if (nv === 0) delete selExtra[id]; else selExtra[id] = nv;
+        const nEl = wrap.querySelector('[data-eqty="' + id + '"]'); if (nEl) nEl.textContent = nv;
+        refresh(); return;
+      }
       const chip = e.target.closest('[data-sin]');
       if (chip) { const v = chip.getAttribute('data-sin'); if (selSin.has(v)) { selSin.delete(v); chip.classList.remove('is-on'); } else { selSin.add(v); chip.classList.add('is-on'); } return; }
       if (e.target.closest('#c-add')) {
-        const cons = [...selExtra].map((id) => { const x = extras.find((e) => e.id === id); return 'con ' + (x ? x.nombre.toLowerCase() : id); });
+        const cons = Object.keys(selExtra).map((id) => { const x = extraInfo(id); const nm = x ? x.nombre.toLowerCase() : id; return selExtra[id] > 1 ? ('con ' + nm + ' x' + selExtra[id]) : ('con ' + nm); });
         const sins = [...selSin].map((s) => 'sin ' + s);
         const free = (wrap.querySelector('#c-nota').value || '').trim();
         const nota = cons.concat(sins).concat(free ? [free] : []).join(', ');
@@ -429,7 +476,7 @@ BurgerHouse.ui = (function () {
   function initHeroRotator() {
     const el = $('#hero-rot');
     if (!el) return;
-    const palabras = ['una burger', 'unas papas', 'una pizza'];
+    const palabras = ['una hamburguesa', 'una pizza'];
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     let i = 0;
     setInterval(() => {
@@ -510,7 +557,7 @@ BurgerHouse.ui = (function () {
       actualizaFab();
       if ($('#orden').classList.contains('is-open') && !mostrandoExito) {
         if (vista === 'items') { refreshItemCtrls(); renderFootOrden(); }
-        else if (vista === 'resumen') { renderResumen(); renderFootOrden(); }
+        else if (vista === 'resumen') { refreshResumen(); renderFootOrden(); }
         else renderFootOrden();
       }
     });

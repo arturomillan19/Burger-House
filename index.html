@@ -10,8 +10,8 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%94%3C/text%3E%3C/svg%3E" />
 
   <!-- Fuentes auto-alojadas (ver css/styles.css). Sin dependencias externas. -->
-  <link rel="preload" href="fonts/hanken-grotesk-var.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=12" />
+  <link rel="preload" href="fonts/nunito-var.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="css/styles.css?v=13" />
 
   <!-- Logo monolínea reutilizable -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -35,7 +35,7 @@
         <span class="brand__word">Burger<em>House</em></span>
       </a>
       <div class="masthead__right">
-        <span class="masthead__meta">Guaymas, Son. · 6:30–10:30 pm</span>
+        <span class="masthead__meta">Jue–Dom · 6:30–10:30 pm · Guaymas</span>
         <button class="masthead__cta" id="nav-ordenar" type="button">Ordenar</button>
         <button class="masthead__cart" id="nav-cart" type="button" hidden aria-label="Ver mi pedido">
           Ver pedido <span class="masthead__cart-n" id="nav-cart-n">0</span>
@@ -47,7 +47,7 @@
   <main id="top">
     <!-- HERO · foto de la hamburguesa a sangre completa -->
     <section class="hero" id="hero">
-      <img class="hero__bg" src="Media/hero.jpg?v=12" alt="Hamburguesa de Burger House recién hecha" fetchpriority="high" />
+      <img class="hero__bg" src="Media/hero.jpg?v=13" alt="Hamburguesa de Burger House recién hecha" fetchpriority="high" />
       <div class="wrap hero__inner">
         <div class="hero__texto">
           <p class="eyebrow hero__eyebrow">Guaymas, Sonora · Hecho en casa</p>
@@ -57,7 +57,7 @@
           </h1>
           <p class="hero__lede">Pídela en un par de toques. La comanda llega directo por WhatsApp.</p>
           <div class="hero__cta">
-            <button class="btn btn--onred btn--xl" type="button" data-abrir-orden><span class="hero__cta-ico" aria-hidden="true">🍔</span> Arma tu pedido</button>
+            <button class="btn btn--onred btn--xl" type="button" data-abrir-orden>Realizar pedido ahora</button>
           </div>
           <div class="hero__chips" role="group" aria-label="Empieza por categoría">
             <span class="hero__chips-lbl">o empieza por:</span>
@@ -76,6 +76,14 @@
       <div class="marquee__track">
         <span>Burgers</span><span class="marquee__dot">●</span><span>Pizzas artesanales</span><span class="marquee__dot">●</span><span>Papas &amp; entradas</span><span class="marquee__dot">●</span><span>A domicilio</span><span class="marquee__dot">●</span><span>Hecho en casa</span><span class="marquee__dot">●</span>
         <span>Burgers</span><span class="marquee__dot">●</span><span>Pizzas artesanales</span><span class="marquee__dot">●</span><span>Papas &amp; entradas</span><span class="marquee__dot">●</span><span>A domicilio</span><span class="marquee__dot">●</span><span>Hecho en casa</span><span class="marquee__dot">●</span>
+      </div>
+    </div>
+
+    <!-- Promo maquila -->
+    <div class="promo-strip">
+      <div class="wrap promo-strip__in">
+        <span class="promo-strip__ico" aria-hidden="true">🏭</span>
+        <p><b>¿Trabajas en maquila?</b> 10% de descuento presentando tu credencial de la planta.</p>
       </div>
     </div>
 
@@ -144,7 +152,8 @@
           <h4>Visítanos</h4>
           <p>Blvd. Luis Encinas</p>
           <p>Guaymas, Sonora</p>
-          <p>Abierto · 6:30–10:30 pm</p>
+          <p><b>Jueves a Domingo</b></p>
+          <p>6:30 – 10:30 pm</p>
         </div>
         <div class="footer__col">
           <h4>Pedidos</h4>
@@ -176,9 +185,9 @@
     <footer class="orden__foot" id="orden-foot"><!-- inyectado por js/ui.js --></footer>
   </div>
 
-  <script defer src="js/data.js?v=12"></script>
-  <script defer src="js/cart.js?v=12"></script>
-  <script defer src="js/whatsapp.js?v=12"></script>
-  <script defer src="js/ui.js?v=12"></script>
+  <script defer src="js/data.js?v=13"></script>
+  <script defer src="js/cart.js?v=13"></script>
+  <script defer src="js/whatsapp.js?v=13"></script>
+  <script defer src="js/ui.js?v=13"></script>
 </body>
 </html>

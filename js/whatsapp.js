@@ -34,8 +34,17 @@ BurgerHouse.whatsapp = (function () {
       msg += '\n';
     });
 
+    const sub = BurgerHouse.cart.total();
+    const pm = BurgerHouse.config.promoMaquila;
+    const aplicaMaq = !!(entrega.maquila && pm && pm.activa);
+    const desc = aplicaMaq ? Math.round(sub * pm.porcentaje / 100) : 0;
+
     msg += '────────────\n';
-    msg += '*Total:* ' + peso(BurgerHouse.cart.total()) + '\n\n';
+    if (aplicaMaq) {
+      msg += 'Subtotal: ' + peso(sub) + '\n';
+      msg += 'Descuento maquila (' + pm.porcentaje + '%): -' + peso(desc) + '\n';
+    }
+    msg += '*Total:* ' + peso(sub - desc) + '\n\n';
 
     if (entrega.tipo === 'domicilio') {
       msg += '*Entrega:* A domicilio\n';
@@ -43,6 +52,7 @@ BurgerHouse.whatsapp = (function () {
     } else {
       msg += '*Entrega:* Paso a recoger al local\n';
     }
+    if (aplicaMaq) msg += '🏭 *Descuento maquila:* presentaré mi credencial de la planta.\n';
 
     msg += '\n¡Gracias!';
     return msg;
