@@ -123,14 +123,15 @@ BurgerHouse.ui = (function () {
   function filaHTML(c, it) {
     const badge = it.destacado ? '<span class="fila__badge">' + esc(it.destacado) + '</span>' : '';
     const pers = tienePersonalizacion(c.id, it.id);
-    return '<article class="fila" data-cat="' + c.id + '" data-item="' + it.id + '">' +
+    const conFoto = !!it.img;   // sin foto: no se dibuja placeholder (la galería ya muestra platillos)
+    return '<article class="fila' + (conFoto ? '' : ' fila--sinfoto') + '" data-cat="' + c.id + '" data-item="' + it.id + '">' +
       '<div class="fila__txt">' +
         '<h4>' + esc(it.nombre) + badge + '</h4>' +
         (it.desc ? '<p>' + esc(it.desc) + '</p>' : '') +
         '<span class="fila__precio">' + peso(it.precio) + '</span>' +
       '</div>' +
       '<div class="fila__media">' +
-        imgHTML(it, 'fila__img') +
+        (conFoto ? imgHTML(it, 'fila__img') : '') +
         '<button class="add" type="button" data-add="' + c.id + ':' + it.id + '" ' +
           'aria-label="' + (pers ? 'Personalizar y agregar ' : 'Agregar ') + esc(it.nombre) + '">' +
           (pers ? 'Elegir' : 'Agregar') +

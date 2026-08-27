@@ -315,6 +315,10 @@ button { font: inherit; color: inherit; cursor: pointer; border: none; backgroun
   #menu-cats[data-vista="cuadricula"] .fila__precio { font-size: var(--t-md); margin-top: var(--e2); }
   #menu-cats[data-vista="cuadricula"] .fila .add { margin: 0 var(--e4) var(--e4); width: calc(100% - var(--e4) * 2); }
 
+  /* Sin foto en cuadrícula: sin hueco de imagen; el botón cae bajo el texto. */
+  #menu-cats[data-vista="cuadricula"] .fila--sinfoto .fila__media { order: 0; }
+  #menu-cats[data-vista="cuadricula"] .fila--sinfoto .fila__txt { padding-bottom: var(--e3); }
+
   /* LISTA en desktop: más aire lateral que en móvil. */
   #menu-cats[data-vista="lista"] .fila { grid-template-columns: 1fr auto; gap: var(--e5); }
 }
