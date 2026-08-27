@@ -1,572 +1,713 @@
-/* Burger House — UI: flujo guiado "¿qué se te antoja? → elige → listo" + carta en la página.
-   Sin frameworks: DOM directo, patrón módulo. Mobile-first.
+/* Burger House — UI del menú interactivo. Mobile-first, sin frameworks.
+
    Superficies:
-   - Carta editorial en la página (browse) con botón "Añadir".
-   - Overlay guiado #orden con 3 vistas: categorías → items → resumen/checkout.
-   - Botón flotante #fab SIEMPRE visible + botón "Ver pedido" en el nav. */
+   - #menu       carta completa en la página, con tabs pegajosos por categoría.
+   - #hoja       hoja de personalización (bottom sheet) con modificadores.
+   - #pedido     resumen del pedido y datos de entrega.
+   - #barra      barra fija con total y CTA, visible en cuanto hay algo.
+
+   Diseño gobernado por brand-profile-burger-house.md. */
 window.BurgerHouse = window.BurgerHouse || {};
 
 BurgerHouse.ui = (function () {
   'use strict';
 
   const peso = (n) => '$' + n.toLocaleString('es-MX');
-  const num = (n) => n.toLocaleString('es-MX');
   const $ = (s, c) => (c || document).querySelector(s);
+  const $$ = (s, c) => Array.prototype.slice.call((c || document).querySelectorAll(s));
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-  const ICONO = { burgers: '🍔', entradas: '🍟', pizzas: '🍕', bebidas: '🥤' };
-  const notaPH = { burgers: 'Ej: término medio, sin cebolla', pizzas: 'Ej: mitad y mitad, extra queso', entradas: 'Ej: aderezo aparte', bebidas: 'Ej: sin hielo' };
-
   let scrollY = 0;
-  let vista = 'categorias';
-  let catActual = null;
-  let footBuilt = false;
-  let mostrandoExito = false;
+  let hojaCtx = null;      // { catId, itemId, editIdx? } mientras la hoja está abierta
+  let folioActual = null;
 
+  /* ═════════ Datos ═════════ */
   function categorias() {
-    return BurgerHouse.MENU.concat([{ id: 'bebidas', nombre: 'Bebidas', desc: 'Para acompañar.', items: BurgerHouse.BEBIDAS }]);
+    return BurgerHouse.MENU.concat([{
+      id: 'bebidas', nombre: 'Bebidas', desc: 'Para acompañar.', items: BurgerHouse.BEBIDAS,
+    }]);
   }
   function cat(id) { return categorias().find((c) => c.id === id); }
-  function item(catId, itemId) { const c = cat(catId); return c ? c.items.find((i) => i.id === itemId) : null; }
-  function desde(c) { return Math.min.apply(null, c.items.map((i) => i.precio)); }
-  // índice de la línea "simple" (sin nota) de un item, para +/- rápidos
-  function lineaSimple(catId, itemId) {
-    return BurgerHouse.cart.lineas.findIndex((l) => l.categoriaId === catId && l.itemId === itemId && !l.nota && !l.regalo);
+  function item(catId, itemId) {
+    const c = cat(catId);
+    return c ? c.items.find((i) => i.id === itemId) : null;
   }
-  function qtyDe(catId, itemId) {
-    return BurgerHouse.cart.lineas.reduce((s, l) => s + ((l.categoriaId === catId && l.itemId === itemId && !l.regalo) ? l.cantidad : 0), 0);
+  // Grupos de modificadores: los del item + los de su categoría.
+  function modsDe(catId, itemId) {
+    const it = item(catId, itemId);
+    if (!it) return [];
+    return (it.mods || []).concat(BurgerHouse.MODS_CAT[catId] || []);
   }
-  // ¿El platillo se puede personalizar? (tiene ingredientes removibles o extras de categoría)
-  function esPersonalizable(catId, itemId) {
-    const it = item(catId, itemId); const c = cat(catId);
-    return !!((it && it.quita && it.quita.length) || (c && c.extras && c.extras.length));
+  function tienePersonalizacion(catId, itemId) { return modsDe(catId, itemId).length > 0; }
+
+  /* ═════════ Imagen con placeholder ═════════
+     Si no hay foto, se dibuja un bloque tipográfico con la inicial. Se ve
+     intencional, no roto. Reemplazar = poner `img` en data.js, nada más. */
+  function imgHTML(it, cls) {
+    const inicial = esc(it.nombre.trim()[0] || '?');
+    if (!it.img) {
+      return '<div class="' + cls + ' ph" aria-hidden="true"><span>' + inicial + '</span></div>';
+    }
+    return '<img class="' + cls + '" src="' + esc(it.img) + '" alt="" loading="lazy" decoding="async" ' +
+           'width="144" height="144" onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),' +
+           '{className:\'' + cls + ' ph\',innerHTML:\'<span>' + inicial + '</span>\'}))" />';
   }
 
-  /* ---------- scroll lock ---------- */
-  function lockScroll() {
-    if (document.body.classList.contains('no-scroll')) return;
-    scrollY = window.scrollY;
-    document.body.style.top = -scrollY + 'px';
-    document.body.classList.add('no-scroll');
-  }
-  function unlockScroll() {
-    if (!document.body.classList.contains('no-scroll')) return;
-    document.body.classList.remove('no-scroll');
-    document.body.style.top = '';
-    window.scrollTo(0, scrollY);
-  }
-
-  /* ============================================================
-     Carta en la página (browse) + tarjetas "¿qué se te antoja?"
-     ============================================================ */
-  function mrowHTML(c, it) {
-    const key = c.id + ':' + it.id;
-    return '<article class="mrow">' +
-      '<div class="mrow__body">' +
-        '<div class="mrow__top"><span class="mrow__name">' + esc(it.nombre) + '</span>' +
-          '<span class="mrow__dots" aria-hidden="true"></span>' +
-          '<span class="mrow__price">' + num(it.precio) + '</span></div>' +
-        (it.desc ? '<p class="mrow__desc">' + esc(it.desc) + '</p>' : '') +
-      '</div>' +
-      '<div class="mrow__act"><button class="add" type="button" data-add="' + key + '" aria-label="Añadir ' + esc(it.nombre) + '">' +
-        '<span class="add__plus" aria-hidden="true">+</span><span class="add__txt">Añadir</span>' +
-        '<span class="add__count" data-add-count="' + key + '" hidden></span></button></div>' +
-    '</article>';
-  }
+  /* ═════════ Carta en la página ═════════ */
   function renderMenu() {
     const cont = $('#menu-cats');
     if (!cont) return;
-    cont.innerHTML = categorias().map((c) =>
-      '<section class="cat" id="cat-' + c.id + '">' +
-        '<div class="cat__head"><h3 class="cat__name">' + esc(c.nombre) + '</h3>' +
-          '<span class="cat__meta muted">' + c.items.length + ' opciones · desde ' + peso(desde(c)) + '</span></div>' +
-        (c.desc ? '<p class="cat__desc">' + esc(c.desc) + '</p>' : '') +
-        '<div class="cat__rule"></div>' + c.items.map((it) => mrowHTML(c, it)).join('') +
-      '</section>'
-    ).join('');
+    cont.innerHTML = categorias().map((c) => {
+      const filas = c.items.map((it) => filaHTML(c, it)).join('');
+      return '<section class="cat" id="cat-' + c.id + '">' +
+        '<div class="cat__head"><h3>' + esc(c.nombre) + '</h3><p>' + esc(c.desc || '') + '</p></div>' +
+        '<div class="filas">' + filas + '</div></section>';
+    }).join('');
   }
 
-  function renderAntojo() {
-    const cont = $('#antojo-grid');
-    if (!cont) return;
-    cont.innerHTML = categorias().map((c) =>
-      '<button class="acard" type="button" data-cat-abrir="' + c.id + '">' +
-        '<span class="acard__ico" aria-hidden="true">' + (ICONO[c.id] || '🍽️') + '</span>' +
-        '<span class="acard__body"><span class="acard__name">' + esc(c.nombre) + '</span>' +
-          '<span class="acard__meta">desde ' + peso(desde(c)) + '</span></span>' +
-        '<span class="acard__go" aria-hidden="true">→</span>' +
-      '</button>'
-    ).join('');
-    // La apertura por categoría se maneja con un listener global (data-cat-abrir).
+  function filaHTML(c, it) {
+    const badge = it.destacado ? '<span class="fila__badge">' + esc(it.destacado) + '</span>' : '';
+    const pers = tienePersonalizacion(c.id, it.id);
+    return '<article class="fila" data-cat="' + c.id + '" data-item="' + it.id + '">' +
+      '<div class="fila__txt">' +
+        '<h4>' + esc(it.nombre) + badge + '</h4>' +
+        (it.desc ? '<p>' + esc(it.desc) + '</p>' : '') +
+        '<span class="fila__precio">' + peso(it.precio) + '</span>' +
+      '</div>' +
+      '<div class="fila__media">' +
+        imgHTML(it, 'fila__img') +
+        '<button class="add" type="button" data-add="' + c.id + ':' + it.id + '" ' +
+          'aria-label="' + (pers ? 'Personalizar y agregar ' : 'Agregar ') + esc(it.nombre) + '">' +
+          (pers ? 'Elegir' : 'Agregar') +
+          '<span class="add__n" data-n="' + c.id + ':' + it.id + '" hidden>0</span>' +
+        '</button>' +
+      '</div>' +
+    '</article>';
   }
 
-  function refreshAddCounts() {
+  // Contadores en los botones: refleja cuántos de ese producto van en el pedido.
+  function refreshContadores() {
     const tot = {};
-    BurgerHouse.cart.lineas.forEach((l) => { if (l.regalo) return; const k = l.categoriaId + ':' + l.itemId; tot[k] = (tot[k] || 0) + l.cantidad; });
-    document.querySelectorAll('[data-add-count]').forEach((b) => {
-      const n = tot[b.getAttribute('data-add-count')] || 0;
-      const btn = b.closest('.add'); const txt = btn && btn.querySelector('.add__txt');
-      if (n > 0) { b.textContent = n; b.hidden = false; if (btn) btn.classList.add('is-in'); if (txt) txt.textContent = 'Agregar otra'; }
-      else { b.hidden = true; if (btn) btn.classList.remove('is-in'); if (txt) txt.textContent = 'Añadir'; }
+    BurgerHouse.cart.lineas.forEach((l) => {
+      const k = l.catId + ':' + l.itemId;
+      tot[k] = (tot[k] || 0) + l.cantidad;
+    });
+    $$('[data-n]').forEach((el) => {
+      const n = tot[el.getAttribute('data-n')] || 0;
+      el.textContent = n;
+      el.hidden = n === 0;
+      el.closest('.add').classList.toggle('add--activo', n > 0);
     });
   }
 
-  /* ============================================================
-     Overlay guiado
-     ============================================================ */
-  function abrirOrden(v, catId) {
-    mostrandoExito = false;
-    const ov = $('#orden');
-    ov.classList.add('is-open');
-    ov.setAttribute('aria-hidden', 'false');
-    lockScroll();
-    setVista(v || 'categorias', catId);
-    $('#orden-close').focus();
-    trapFocus(ov);
-  }
-  function cerrarOrden() {
-    const ov = $('#orden');
-    ov.classList.remove('is-open');
-    ov.setAttribute('aria-hidden', 'true');
-    unlockScroll();
-    actualizaFab();
+  /* ═════════ Vista del menú (cuadrícula ↔ lista) ═════════
+     Preferencia del usuario, recordada entre visitas. En móvil el CSS ignora
+     el atributo: la lista es la única forma sensata en una columna. */
+  const LLAVE_VISTA = 'bh.vista';
+
+  function aplicarVista(v) {
+    const cont = $('#menu-cats');
+    if (cont) cont.setAttribute('data-vista', v);
+    $$('.vista__b').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-vista') === v));
+    });
+    try { localStorage.setItem(LLAVE_VISTA, v); } catch (e) { /* modo privado */ }
   }
 
-  function setVista(v, catId) {
-    vista = v;
-    if (catId) catActual = catId;
-    if (v !== 'resumen') footBuilt = false;
-    const back = $('#orden-back'); const title = $('#orden-title');
-    if (v === 'categorias') { back.hidden = true; title.textContent = 'Arma tu pedido'; renderCategorias(); }
-    else if (v === 'items') { back.hidden = false; $('.orden__back-txt', back).textContent = 'Categorías'; title.textContent = cat(catActual).nombre; renderItems(); }
-    else { back.hidden = false; $('.orden__back-txt', back).textContent = 'Seguir eligiendo'; title.textContent = 'Tu pedido'; renderResumen(); }
-    renderFootOrden();
-    const body = $('#orden-body'); if (body) body.scrollTop = 0;
+  function vistaGuardada() {
+    try { return localStorage.getItem(LLAVE_VISTA) === 'lista' ? 'lista' : 'cuadricula'; }
+    catch (e) { return 'cuadricula'; }
   }
 
-  function renderCategorias() {
-    $('#orden-body').innerHTML =
-      '<div class="ov-head"><h2 class="display">¿Qué se te <em>antoja?</em></h2><p class="muted">Elige una categoría para empezar.</p></div>' +
-      '<div class="ov-cats">' + categorias().map((c) =>
-        '<button class="ovcat" type="button" data-ir-items="' + c.id + '">' +
-          '<span class="ovcat__ico" aria-hidden="true">' + (ICONO[c.id] || '🍽️') + '</span>' +
-          '<span class="ovcat__t"><span class="ovcat__name">' + esc(c.nombre) + '</span><span class="ovcat__meta">' + c.items.length + ' opciones · desde ' + peso(desde(c)) + '</span></span>' +
-          '<span class="ovcat__go" aria-hidden="true">→</span>' +
-        '</button>'
-      ).join('') + '</div>';
-  }
-
-  function itemCtrlHTML(catId, itemId) {
-    const it = item(catId, itemId);
-    const n = qtyDe(catId, itemId);
-    const key = catId + ':' + itemId;
-    // Personalizable (removibles o extras) → abre la hoja.
-    if (esPersonalizable(catId, itemId)) {
-      return '<button class="oadd" type="button" data-ocustom="' + key + '"><span aria-hidden="true">+</span> Agregar</button>' +
-        (n ? '<span class="oadd-n">' + n + ' en tu pedido</span>' : '');
-    }
-    if (n === 0) return '<button class="oadd" type="button" data-oadd="' + key + '"><span aria-hidden="true">+</span> Agregar</button>';
-    return '<div class="qtl"><button class="qtl__b" type="button" data-oless="' + key + '" aria-label="Quitar">−</button>' +
-      '<span class="qtl__n">' + n + '</span>' +
-      '<button class="qtl__b" type="button" data-oadd="' + key + '" aria-label="Agregar">+</button></div>';
-  }
-  function renderItems() {
-    const c = cat(catActual);
-    $('#orden-body').innerHTML =
-      '<div class="ov-head"><span class="ov-ico" aria-hidden="true">' + (ICONO[c.id] || '🍽️') + '</span>' +
-        '<h2 class="display">' + esc(c.nombre) + '</h2>' + (c.desc ? '<p class="muted">' + esc(c.desc) + '</p>' : '') + '</div>' +
-      '<div class="ov-items">' + c.items.map((it) =>
-        '<article class="oitem">' +
-          '<div class="oitem__info"><p class="oitem__name">' + esc(it.nombre) + '</p>' +
-            (it.desc ? '<p class="oitem__desc">' + esc(it.desc) + '</p>' : '') +
-            '<p class="oitem__price">' + peso(it.precio) + '</p></div>' +
-          '<div class="oitem__ctrl" data-ctrl="' + c.id + ':' + it.id + '">' + itemCtrlHTML(c.id, it.id) + '</div>' +
-        '</article>'
-      ).join('') + '</div>';
-  }
-  function refreshItemCtrls() {
-    document.querySelectorAll('#orden-body [data-ctrl]').forEach((el) => {
-      const [c, i] = el.getAttribute('data-ctrl').split(':');
-      el.innerHTML = itemCtrlHTML(c, i);
+  function bindVista() {
+    const grupo = document.querySelector('.vista');
+    if (!grupo) return;
+    grupo.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-vista]');
+      if (b) aplicarVista(b.getAttribute('data-vista'));
     });
   }
 
-  function liHTML(l, idx) {
-    const sub = l.regalo ? 'Gratis' : peso(l.precio * l.cantidad);
-    const nota = l.regalo ? '' : (l.nota
-      ? '<div class="li__nota"><input type="text" value="' + esc(l.nota) + '" data-nota-input="' + idx + '" placeholder="' + (notaPH[l.categoriaId] || 'Nota') + '" /></div>'
-      : '<button class="li__nota-toggle" type="button" data-nota-open="' + idx + '">+ Agregar nota</button>');
-    return '<div class="li' + (l.regalo ? ' li--regalo' : '') + '">' +
-      '<div class="li__top"><span class="li__nombre">' + esc(l.nombre) + '</span><span class="li__precio">' + sub + '</span></div>' +
-      (l.regalo ? '<div class="li__row"><span class="muted" style="font-size:.86rem">Cortesía 🎉</span></div>' :
-        '<div class="li__row"><div class="qtl qtl--sm">' +
-          '<button class="qtl__b" type="button" data-qty="-1" data-idx="' + idx + '" aria-label="Menos">−</button>' +
-          '<span class="qtl__n">' + l.cantidad + '</span>' +
-          '<button class="qtl__b" type="button" data-qty="1" data-idx="' + idx + '" aria-label="Más">+</button></div>' +
-          '<button class="li__quitar" type="button" data-remove="' + idx + '">Quitar</button></div>' + nota) +
-    '</div>';
-  }
-  function renderLineas() { const c = $('#ov-lineas'); if (c) c.innerHTML = BurgerHouse.cart.lineas.map((l, idx) => liHTML(l, idx)).join(''); }
-  function drinksHTML() {
-    return '<div class="ov-drinks"><p class="ov-drinks__lbl">¿Algo de tomar? 🥤</p><div class="ov-drinks__row">' +
-      BurgerHouse.BEBIDAS.map((b) => '<button class="drink" type="button" data-drink="' + b.id + '">' + esc(b.nombre) +
-        ' <span class="drink__p">' + peso(b.precio) + '</span><span class="drink__n" data-drink-n="' + b.id + '" hidden></span></button>').join('') +
-    '</div></div>';
-  }
-  function refreshDrinks() {
-    BurgerHouse.BEBIDAS.forEach((b) => { const el = $('[data-drink-n="' + b.id + '"]'); if (!el) return; const n = qtyDe('bebidas', b.id); if (n > 0) { el.textContent = n; el.hidden = false; } else { el.hidden = true; } });
-  }
-  function renderResumen() {
-    const body = $('#orden-body');
-    if (mostrandoExito) return;
-    if (!BurgerHouse.cart.lineas.length) {
-      body.innerHTML = '<div class="ov-vacio"><span aria-hidden="true">🛒</span><p>Tu pedido está vacío.<br>Vuelve y elige algo rico 🍔</p>' +
-        '<button class="btn btn--red" type="button" data-ir-cats>Ver categorías</button></div>';
-      return;
-    }
-    const pm = BurgerHouse.config.promoMaquila;
-    body.innerHTML =
-      '<div class="ov-head ov-head--sm"><h2 class="display">Tu <em>pedido</em></h2></div>' +
-      '<div class="ov-lineas" id="ov-lineas"></div>' +
-      '<button class="ov-mas" type="button" data-ir-cats><span aria-hidden="true">+</span> Agregar algo más</button>' +
-      drinksHTML() +
-      '<div class="ov-checkout">' +
-        '<div class="pickup"><span class="pickup__ico" aria-hidden="true">🛍️</span> <span>Paso a recoger al local</span></div>' +
-        '<div class="campo"><input type="text" id="f-nombre" placeholder="¿A nombre de quién?" autocomplete="name" /></div>' +
-        ((pm && pm.activa) ? '<label class="maquila"><input type="checkbox" id="f-maquila" /> <span>🏭 Trabajo en maquila <small>(' + pm.porcentaje + '% presentando credencial)</small></span></label>' : '') +
-      '</div>';
-    renderLineas();
-    refreshDrinks();
-  }
-  function refreshResumen() {
-    if (mostrandoExito) return;
-    if (!BurgerHouse.cart.lineas.length || !$('#ov-lineas')) { renderResumen(); return; }
-    renderLineas();
-    refreshDrinks();
-  }
-  function updateTotalDisplay() {
-    const tb = $('#ov-total-b'); if (!tb) return;
-    const pm = BurgerHouse.config.promoMaquila;
-    const maq = !!(($('#f-maquila') || {}).checked);
-    const sub = BurgerHouse.cart.total();
-    const aplica = maq && pm && pm.activa;
-    const desc = aplica ? Math.round(sub * pm.porcentaje / 100) : 0;
-    tb.textContent = num(sub - desc);
-    const dl = $('#ov-descline'); const dv = $('#ov-desc');
-    if (dl) { dl.hidden = !aplica; if (dv) dv.textContent = '−' + peso(desc); }
+  /* ═════════ Tabs de categoría ═════════ */
+  function renderTabs() {
+    const cont = $('#tabs');
+    if (!cont) return;
+    cont.innerHTML = categorias().map((c, i) =>
+      '<button class="tab' + (i === 0 ? ' tab--on' : '') + '" type="button" data-tab="' + c.id + '">' +
+        esc(c.nombre) + '</button>').join('');
   }
 
-  function renderFootOrden() {
-    const foot = $('#orden-foot');
-    if (mostrandoExito) { foot.innerHTML = ''; return; }
-    const count = BurgerHouse.cart.count();
-    if (vista === 'resumen') {
-      foot.innerHTML = count > 0
-        ? '<div class="ov-descline" id="ov-descline" hidden><span>Descuento maquila</span><b id="ov-desc">−$0</b></div>' +
-          '<div class="ov-total"><span>Total</span><b id="ov-total-b">' + num(BurgerHouse.cart.total()) + '</b></div>' +
-          '<button class="btn btn--red btn--full" type="button" id="f-enviar">Enviar por WhatsApp</button>'
-        : '';
-      updateTotalDisplay();
-      return;
-    }
-    // categorías / items: acceso al pedido si ya hay algo
-    if (count > 0) {
-      foot.innerHTML = '<button class="btn btn--red btn--full" type="button" data-ir-resumen>' +
-        'Ver mi pedido · ' + peso(BurgerHouse.cart.total()) + ' <span class="ov-n">' + count + '</span></button>';
-    } else {
-      foot.innerHTML = '<p class="ov-hint">Toca “Agregar” en lo que quieras 👆</p>';
-    }
+  /* Altura real de lo pegajoso (nav + tabs) + un respiro. Se mide en vivo:
+     si el nav crece —por un horario en dos líneas, por ejemplo— el ancla
+     se ajusta sola en vez de tapar el título de la categoría. */
+  function offsetPegajoso() {
+    const nav = $('#nav'), tabs = $('.tabs-wrap');
+    const h = (nav ? nav.offsetHeight : 0) + (tabs ? tabs.offsetHeight : 0);
+    return h + 16;
   }
 
-  /* ---------- eventos del overlay (delegados) ---------- */
-  function bindOrden() {
-    const ov = $('#orden');
-    ov.addEventListener('click', (e) => {
-      const irItems = e.target.closest('[data-ir-items]');
-      if (irItems) { setVista('items', irItems.getAttribute('data-ir-items')); return; }
-      if (e.target.closest('[data-ir-cats]')) { setVista('categorias'); return; }
-      if (e.target.closest('[data-ir-resumen]')) { setVista('resumen'); return; }
+  /* Pasa las alturas medidas al CSS, para que `scroll-margin-top` (que usa el
+     navegador al saltar por teclado o por enlace) coincida con lo que mide el JS. */
+  function sincronizarAlturas() {
+    const nav = $('#nav'), tabs = $('.tabs-wrap');
+    const r = document.documentElement.style;
+    if (nav) r.setProperty('--nav-h', nav.offsetHeight + 'px');
+    if (tabs) r.setProperty('--tabs-h', tabs.offsetHeight + 'px');
+  }
 
-      const ocustom = e.target.closest('[data-ocustom]');
-      if (ocustom) { const [c, i] = ocustom.getAttribute('data-ocustom').split(':'); abrirCustom(c, i); return; }
-      const oadd = e.target.closest('[data-oadd]');
-      if (oadd) {
-        const [c, i] = oadd.getAttribute('data-oadd').split(':');
-        const it = item(c, i);
-        if (it) BurgerHouse.cart.add({ categoriaId: c, categoriaNombre: cat(c).nombre, itemId: i, nombre: it.nombre, precio: it.precio, cantidad: 1, nota: '' });
-        return;
-      }
-      const oless = e.target.closest('[data-oless]');
-      if (oless) { const [c, i] = oless.getAttribute('data-oless').split(':'); const idx = lineaSimple(c, i); if (idx !== -1) BurgerHouse.cart.updateCantidad(idx, BurgerHouse.cart.lineas[idx].cantidad - 1); return; }
-
-      const qty = e.target.closest('[data-qty]');
-      if (qty) { const idx = +qty.getAttribute('data-idx'); const l = BurgerHouse.cart.lineas[idx]; if (l) BurgerHouse.cart.updateCantidad(idx, l.cantidad + (+qty.getAttribute('data-qty'))); return; }
-      const rm = e.target.closest('[data-remove]');
-      if (rm) { BurgerHouse.cart.remove(+rm.getAttribute('data-remove')); return; }
-      const dr = e.target.closest('[data-drink]');
-      if (dr) { const id = dr.getAttribute('data-drink'); const b = BurgerHouse.BEBIDAS.find((x) => x.id === id); if (b) BurgerHouse.cart.add({ categoriaId: 'bebidas', categoriaNombre: 'Bebidas', itemId: id, nombre: b.nombre, precio: b.precio, cantidad: 1, nota: '' }); return; }
-      const no = e.target.closest('[data-nota-open]');
-      if (no) {
-        const idx = no.getAttribute('data-nota-open');
-        const w = document.createElement('div'); w.className = 'li__nota';
-        w.innerHTML = '<input type="text" data-nota-input="' + idx + '" placeholder="' + (notaPH[(BurgerHouse.cart.lineas[+idx] || {}).categoriaId] || 'Nota') + '" />';
-        no.replaceWith(w); w.querySelector('input').focus(); return;
-      }
-      if (e.target.closest('#f-enviar')) { enviar(); return; }
+  function bindTabs() {
+    const cont = $('#tabs');
+    if (!cont) return;
+    cont.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-tab]');
+      if (!b) return;
+      const sec = document.getElementById('cat-' + b.getAttribute('data-tab'));
+      if (!sec) return;
+      const y = sec.getBoundingClientRect().top + window.scrollY - offsetPegajoso();
+      window.scrollTo({ top: y, behavior: 'smooth' });
     });
-    ov.addEventListener('change', (e) => {
-      if (e.target.id === 'f-maquila') updateTotalDisplay();
-      const ni = e.target.closest('[data-nota-input]');
-      if (ni) BurgerHouse.cart.updateNota(+ni.getAttribute('data-nota-input'), ni.value);
-    });
-    ov.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('[data-nota-input]')) { e.preventDefault(); e.target.blur(); } });
-    $('#orden-back').addEventListener('click', () => setVista('categorias'));
-    $('#orden-close').addEventListener('click', cerrarOrden);
+    // El tab activo sigue a la sección visible.
+    if ('IntersectionObserver' in window) {
+      const obs = new IntersectionObserver((entradas) => {
+        entradas.forEach((en) => {
+          if (!en.isIntersecting) return;
+          const id = en.target.id.replace('cat-', '');
+          $$('.tab').forEach((t) => t.classList.toggle('tab--on', t.getAttribute('data-tab') === id));
+        });
+      }, { rootMargin: '-120px 0px -70% 0px' });
+      $$('.cat').forEach((s) => obs.observe(s));
+    }
   }
 
-  function syncEntrega() {
-    document.querySelectorAll('.entrega__op').forEach((op) => { const r = op.querySelector('input'); op.classList.toggle('is-sel', !!(r && r.checked)); });
-  }
-
-  function enviar() {
-    const nombre = (($('#f-nombre') || {}).value || '').trim();
-    if (!nombre) { const el = $('#f-nombre'); el.focus(); el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), 500); return; }
-    const maquila = !!(($('#f-maquila') || {}).checked);
-    const url = BurgerHouse.whatsapp.urlPedido({ nombre, maquila });
-    if (!url) return;
-    window.open(url, '_blank');
-    mostrarExito(url);
-  }
-
-  function mostrarExito(url) {
-    mostrandoExito = true;
-    BurgerHouse.cart.clear();
-    $('#orden-back').hidden = true;
-    $('#orden-title').textContent = '¡Listo!';
-    $('#orden-foot').innerHTML = '';
-    $('#orden-body').innerHTML =
-      '<div class="ov-exito"><div class="ov-exito__check" aria-hidden="true">✓</div>' +
-        '<h2 class="display">¡Pedido enviado!</h2>' +
-        '<p>Se abrió WhatsApp con tu pedido. Solo tócale <b>enviar</b> ahí para confirmarlo.</p>' +
-        (url ? '<button class="link" type="button" id="ex-reenviar">¿No se abrió? Reenviar <span aria-hidden="true">→</span></button>' : '') +
-        '<button class="btn btn--red btn--full" type="button" id="ex-cerrar">Listo</button></div>';
-    if (url) $('#ex-reenviar').addEventListener('click', () => window.open(url, '_blank'));
-    $('#ex-cerrar').addEventListener('click', () => { mostrandoExito = false; cerrarOrden(); });
-  }
-
-  /* ============================================================
-     Hoja de personalización ("sin ___" + cantidad + nota)
-     ============================================================ */
-  let sheetEl = null;
-  function abrirCustom(catId, itemId) {
+  /* ═════════ Hoja de personalización ═════════ */
+  function abrirHoja(catId, itemId, editIdx) {
     const it = item(catId, itemId);
     if (!it) return;
-    const c = cat(catId);
-    const quita = (it.quita && it.quita.length) ? it.quita : [];
-    const extras = (c && c.extras && c.extras.length) ? c.extras : [];
-    cerrarSheet();
+    const grupos = modsDe(catId, itemId);
+    // Sin modificadores y sin editar: va directo al pedido, sin fricción.
+    if (!grupos.length && editIdx == null) {
+      BurgerHouse.cart.add({ catId: catId, catNombre: cat(catId).nombre, itemId: itemId,
+        nombre: it.nombre, base: it.precio, cantidad: 1, mods: [], nota: '' });
+      pulso();
+      return;
+    }
+    hojaCtx = { catId: catId, itemId: itemId, editIdx: editIdx };
+    const previo = editIdx != null ? BurgerHouse.cart.lineas[editIdx] : null;
+    $('#hoja-body').innerHTML = hojaHTML(it, grupos, previo);
+    $('#hoja-titulo').textContent = it.nombre;
     lockScroll();
-    const selSin = new Set();
-    const selExtra = {};                 // id -> cantidad
-    let qty = 1;
-    const extraInfo = (id) => extras.find((e) => e.id === id);
-    const extrasSum = () => Object.keys(selExtra).reduce((s, id) => { const x = extraInfo(id); return s + (x ? x.precio * selExtra[id] : 0); }, 0);
-    const wrap = document.createElement('div');
-    wrap.className = 'sheet-wrap';
-    wrap.innerHTML =
-      '<div class="sheet-scrim" data-cerrar></div>' +
-      '<div class="sheet" role="dialog" aria-modal="true" aria-label="Personalizar ' + esc(it.nombre) + '">' +
-        '<button class="sheet__close" type="button" data-cerrar aria-label="Cerrar">×</button>' +
-        '<p class="sheet__eyebrow">' + esc(c.nombre) + '</p>' +
-        '<h3 class="sheet__title">' + esc(it.nombre) + '</h3>' +
-        (it.desc ? '<p class="sheet__desc">' + esc(it.desc) + '</p>' : '') +
-        (extras.length ?
-          '<div class="sheet__extras"><p class="sheet__lbl">¿Algo extra?</p>' +
-            extras.map((e) => '<div class="extra-row"><span class="extra-row__t">' + esc(e.nombre) + ' <span class="chip__price">+' + peso(e.precio) + (e.max ? ' <small>· máx ' + e.max + '</small>' : '') + '</span></span>' +
-              '<div class="qtl qtl--sm"><button class="qtl__b" type="button" data-ex="-1" data-eid="' + e.id + '" aria-label="Menos">−</button>' +
-              '<span class="qtl__n" data-eqty="' + e.id + '">0</span>' +
-              '<button class="qtl__b" type="button" data-ex="1" data-eid="' + e.id + '" aria-label="Más">+</button></div></div>').join('') +
-          '</div>' : '') +
-        (quita.length ?
-          '<div class="sheet__quita"><p class="sheet__lbl">¿Le quitamos algo? <small>toca para quitar</small></p><div class="chips">' +
-            quita.map((q) => '<button class="chip" type="button" data-sin="' + esc(q) + '">sin ' + esc(q) + '</button>').join('') +
-          '</div></div>' : '') +
-        '<label class="sheet__nota"><span class="sheet__lbl">Otra indicación <small>(opcional)</small></span>' +
-          '<input type="text" id="c-nota" placeholder="Ej: bien dorada, extra queso" /></label>' +
-        '<div class="sheet__foot">' +
-          '<div class="qtl"><button class="qtl__b" type="button" data-c="-1" aria-label="Menos">−</button>' +
-            '<span class="qtl__n" id="c-qty">1</span>' +
-            '<button class="qtl__b" type="button" data-c="1" aria-label="Más">+</button></div>' +
-          '<button class="btn btn--red sheet__add" type="button" id="c-add">Agregar · <span id="c-total">' + peso(it.precio) + '</span></button>' +
-        '</div>' +
-      '</div>';
-    document.body.appendChild(wrap);
-    sheetEl = wrap;
-    const qEl = wrap.querySelector('#c-qty'); const tEl = wrap.querySelector('#c-total');
-    const refresh = () => { qEl.textContent = qty; tEl.textContent = peso((it.precio + extrasSum()) * qty); };
-    wrap.addEventListener('click', (e) => {
-      if (e.target.closest('[data-cerrar]')) { cerrarSheet(); return; }
-      const cc = e.target.closest('[data-c]'); if (cc) { qty = Math.max(1, qty + (+cc.getAttribute('data-c'))); refresh(); return; }
-      const ex = e.target.closest('[data-ex]');
-      if (ex) {
-        const id = ex.getAttribute('data-eid'); const info = extraInfo(id); const mx = (info && info.max) || 9;
-        const nv = Math.min(mx, Math.max(0, (selExtra[id] || 0) + (+ex.getAttribute('data-ex'))));
-        if (nv === 0) delete selExtra[id]; else selExtra[id] = nv;
-        const nEl = wrap.querySelector('[data-eqty="' + id + '"]'); if (nEl) nEl.textContent = nv;
-        refresh(); return;
-      }
-      const chip = e.target.closest('[data-sin]');
-      if (chip) { const v = chip.getAttribute('data-sin'); if (selSin.has(v)) { selSin.delete(v); chip.classList.remove('is-on'); } else { selSin.add(v); chip.classList.add('is-on'); } return; }
-      if (e.target.closest('#c-add')) {
-        const cons = Object.keys(selExtra).map((id) => { const x = extraInfo(id); const nm = x ? x.nombre.toLowerCase() : id; return selExtra[id] > 1 ? ('con ' + nm + ' x' + selExtra[id]) : ('con ' + nm); });
-        const sins = [...selSin].map((s) => 'sin ' + s);
-        const free = (wrap.querySelector('#c-nota').value || '').trim();
-        const nota = cons.concat(sins).concat(free ? [free] : []).join(', ');
-        BurgerHouse.cart.add({ categoriaId: catId, categoriaNombre: c.nombre, itemId: itemId, nombre: it.nombre, precio: it.precio + extrasSum(), cantidad: qty, nota: nota });
-        cerrarSheet();
-        pulsoFab();
-      }
+    const h = $('#hoja');
+    h.hidden = false;
+    requestAnimationFrame(() => h.classList.add('hoja--on'));
+    $('#hoja-scrim').hidden = false;
+    calcHoja();
+    setTimeout(() => { const f = $('#hoja-body input, #hoja-body textarea'); if (f) f.focus({ preventScroll: true }); }, 260);
+  }
+
+  function hojaHTML(it, grupos, previo) {
+    const sel = {};
+    if (previo) previo.mods.forEach((m) => { sel[m.id] = m.cantidad || 1; });
+
+    const gruposHTML = grupos.map((g) => {
+      const req = g.tipo === 'elegir' && g.min ? '<span class="grupo__req">Obligatorio</span>' : '';
+      const ops = g.opciones.map((o) => {
+        const marcado = previo ? !!sel[o.id] : (g.tipo === 'elegir' && o.default);
+        const cant = sel[o.id] || 1;
+        const precio = o.precio ? '<span class="op__precio">+' + peso(o.precio) + '</span>' : '';
+        if (g.tipo === 'elegir') {
+          return '<label class="op"><input type="radio" name="g-' + g.id + '" value="' + o.id + '"' +
+            (marcado ? ' checked' : '') + ' data-grupo="' + g.id + '" /><span class="op__t">' + esc(o.nombre) + '</span>' + precio + '</label>';
+        }
+        // Opción con cantidad (ej. carne extra hasta 3)
+        const stepper = o.max && o.max > 1
+          ? '<span class="op__step" data-step="' + o.id + '"' + (marcado ? '' : ' hidden') + '>' +
+              '<button type="button" class="op__b" data-menos="' + o.id + '" aria-label="Menos ' + esc(o.nombre) + '">−</button>' +
+              '<b data-cant="' + o.id + '">' + cant + '</b>' +
+              '<button type="button" class="op__b" data-mas="' + o.id + '" aria-label="Más ' + esc(o.nombre) + '">+</button>' +
+            '</span>'
+          : '';
+        return '<label class="op"><input type="checkbox" value="' + o.id + '"' + (marcado ? ' checked' : '') +
+          ' data-grupo="' + g.id + '" /><span class="op__t">' + esc(o.nombre) + '</span>' + precio + stepper + '</label>';
+      }).join('');
+      return '<fieldset class="grupo"><legend>' + esc(g.nombre) + req + '</legend>' + ops + '</fieldset>';
+    }).join('');
+
+    return '<div class="hoja__top">' + imgHTML(it, 'hoja__img') +
+      '<div><p class="hoja__desc">' + esc(it.desc || '') + '</p>' +
+      '<span class="hoja__base">' + peso(it.precio) + '</span></div></div>' +
+      gruposHTML +
+      '<fieldset class="grupo"><legend>Algo más para la cocina</legend>' +
+      '<textarea id="hoja-nota" rows="2" maxlength="140" placeholder="Ej: bien doradita, aderezo aparte">' +
+      esc(previo ? previo.nota : '') + '</textarea></fieldset>';
+  }
+
+  // Lee la hoja y devuelve los modificadores elegidos.
+  function leerHoja() {
+    if (!hojaCtx) return null;
+    const grupos = modsDe(hojaCtx.catId, hojaCtx.itemId);
+    const mods = [];
+    grupos.forEach((g) => {
+      g.opciones.forEach((o) => {
+        const input = $('#hoja-body input[value="' + o.id + '"][data-grupo="' + g.id + '"]');
+        if (!input || !input.checked) return;
+        const cantEl = $('#hoja-body [data-cant="' + o.id + '"]');
+        const cantidad = cantEl ? parseInt(cantEl.textContent, 10) || 1 : 1;
+        mods.push({ id: o.id, nombre: o.nombre, precio: o.precio || 0, cantidad: cantidad, tipo: g.tipo });
+      });
     });
-    wrap.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); cerrarSheet(); } });
-    setTimeout(() => { const cl = wrap.querySelector('.sheet__close'); if (cl) cl.focus(); }, 30);
-  }
-  function cerrarSheet() {
-    if (!sheetEl) return;
-    sheetEl.remove(); sheetEl = null;
-    if (!$('#orden').classList.contains('is-open')) unlockScroll();
+    const nota = ($('#hoja-nota') && $('#hoja-nota').value) || '';
+    return { mods: mods, nota: nota };
   }
 
-  /* ============================================================
-     Botón flotante + nav
-     ============================================================ */
-  function actualizaFab() {
-    const count = BurgerHouse.cart.count();
-    const fabTxt = $('#fab-txt');
-    if (fabTxt) fabTxt.textContent = count > 0 ? ('Ver pedido · ' + peso(BurgerHouse.cart.total())) : 'Arma tu pedido';
-    const fab = $('#fab');
-    if (fab) fab.classList.toggle('fab--has', count > 0);
-    // insignia de cantidad en el fab
-    let n = $('#fab .fab__n');
-    if (count > 0) {
-      if (!n) { n = document.createElement('span'); n.className = 'fab__n'; fab.appendChild(n); }
-      n.textContent = count;
-    } else if (n) { n.remove(); }
-    // nav
-    const navCart = $('#nav-cart'); const navOrd = $('#nav-ordenar');
-    if (navCart) { navCart.hidden = count === 0; const nn = $('#nav-cart-n'); if (nn) nn.textContent = count; }
-    if (navOrd) navOrd.style.display = count > 0 ? 'none' : '';
-  }
-  function pulsoFab() {
-    const fab = $('#fab');
-    if (!fab) return;
-    fab.classList.remove('is-pulse'); void fab.offsetWidth; fab.classList.add('is-pulse');
-  }
-  function abrirDesdeFab() { abrirOrden(BurgerHouse.cart.count() > 0 ? 'resumen' : 'categorias'); }
-
-  /* ---------- Hero: palabra que rota ---------- */
-  function initHeroRotator() {
-    const el = $('#hero-rot');
-    if (!el) return;
-    const palabras = ['una hamburguesa', 'una pizza'];
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    let i = 0;
-    setInterval(() => {
-      el.classList.add('is-out');
-      setTimeout(() => { i = (i + 1) % palabras.length; el.textContent = palabras[i]; el.classList.remove('is-out'); }, 300);
-    }, 2600);
+  // Total en vivo del botón de la hoja.
+  function calcHoja() {
+    if (!hojaCtx) return;
+    const it = item(hojaCtx.catId, hojaCtx.itemId);
+    const leido = leerHoja();
+    let p = it.precio;
+    leido.mods.forEach((m) => { p += m.precio * m.cantidad; });
+    const b = $('#hoja-cta');
+    b.textContent = (hojaCtx.editIdx != null ? 'Guardar cambios · ' : 'Agregar · ') + peso(p);
+    // Un grupo obligatorio sin elegir bloquea el botón.
+    const falta = modsDe(hojaCtx.catId, hojaCtx.itemId).some((g) =>
+      g.tipo === 'elegir' && g.min && !$('#hoja-body input[data-grupo="' + g.id + '"]:checked'));
+    b.disabled = falta;
   }
 
-  /* ---------- header sólido al hacer scroll ---------- */
-  function initHeader() {
-    const header = $('#masthead'); const hero = $('.hero');
-    if (!header) return;
-    const onScroll = () => { const lim = hero ? hero.offsetHeight - 80 : 60; header.classList.toggle('is-scrolled', window.scrollY > lim); };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll); onScroll();
+  function cerrarHoja() {
+    const h = $('#hoja');
+    h.classList.remove('hoja--on');
+    $('#hoja-scrim').hidden = true;
+    setTimeout(() => { h.hidden = true; }, 220);
+    hojaCtx = null;
+    unlockScroll();
   }
 
-  /* ---------- eventos (paquetes) ---------- */
+  function confirmarHoja() {
+    if (!hojaCtx) return;
+    const it = item(hojaCtx.catId, hojaCtx.itemId);
+    const leido = leerHoja();
+    const linea = {
+      catId: hojaCtx.catId, catNombre: cat(hojaCtx.catId).nombre, itemId: hojaCtx.itemId,
+      nombre: it.nombre, base: it.precio, mods: leido.mods, nota: leido.nota,
+    };
+    if (hojaCtx.editIdx != null) BurgerHouse.cart.replace(hojaCtx.editIdx, linea);
+    else BurgerHouse.cart.add(Object.assign({ cantidad: 1 }, linea));
+    cerrarHoja();
+    pulso();
+  }
+
+  /* ═════════ Barra fija ═════════ */
+  function renderBarra(snap) {
+    const barra = $('#barra');
+    if (!barra) return;
+    const hay = snap.count > 0;
+    barra.hidden = !hay;
+    document.body.classList.toggle('con-barra', hay);
+    if (!hay) {
+      document.documentElement.style.removeProperty('--barra-h');
+      const p = $('#barra-promo');
+      if (p) p.hidden = true;   // sin pedido no hay ahorro que anunciar
+      return;
+    }
+    $('#barra-n').textContent = snap.count;
+    $('#barra-total').textContent = peso(snap.total);
+
+    // Recordatorio del descuento justo donde el cliente mira su total. Aparece
+    // solo cuando ya hay algo que descontar, con el ahorro en pesos.
+    const pm = BurgerHouse.config.promoMaquila;
+    const promo = $('#barra-promo');
+    if (promo && pm && pm.activa && snap.total > 0) {
+      const ahorro = Math.round(snap.total * pm.porcentaje / 100);
+      promo.innerHTML = '¿Trabajas en maquila? Ahorra <b>' + peso(ahorro) + '</b> con tu credencial';
+      promo.hidden = false;
+    } else if (promo) {
+      promo.hidden = true;
+    }
+
+    // La barra cambia de alto según lleve o no el recordatorio: el hueco que
+    // deja el body debe seguirla, o tapa la última fila del menú. Se mide en
+    // el momento (no en un frame futuro) porque el aviso de pedido restaurado
+    // se ancla sobre ella y necesita el valor ya resuelto.
+    document.documentElement.style.setProperty('--barra-h', barra.offsetHeight + 'px');
+  }
+
+  /* El atajo del nav cambia de destino según el estado: sin pedido lleva al
+     menú; con pedido abre el resumen. Un solo botón, siempre útil. */
+  function renderNavCta(snap) {
+    const cta = $('#nav-cta'), txt = $('#nav-cta-txt'), n = $('#nav-cta-n');
+    if (!cta) return;
+    const hay = snap.count > 0;
+    txt.textContent = hay ? 'Ver pedido' : 'Hacer pedido';
+    cta.href = hay ? '#' : '#menu';
+    cta.setAttribute('aria-label', hay
+      ? 'Ver mi pedido, ' + snap.count + ' artículo' + (snap.count === 1 ? '' : 's')
+      : 'Ir al menú para hacer un pedido');
+    if (n) { n.textContent = snap.count; n.hidden = !hay; }
+  }
+
+  function pulso() {
+    const b = $('#barra');
+    if (!b) return;
+    b.classList.remove('barra--pulso');
+    void b.offsetWidth;
+    b.classList.add('barra--pulso');
+  }
+
+  /* ═════════ Pedido (resumen) ═════════ */
+  function abrirPedido() {
+    renderPedido();
+    lockScroll();
+    const p = $('#pedido');
+    p.hidden = false;
+    requestAnimationFrame(() => p.classList.add('pedido--on'));
+  }
+  function cerrarPedido() {
+    const p = $('#pedido');
+    p.classList.remove('pedido--on');
+    setTimeout(() => { p.hidden = true; }, 220);
+    unlockScroll();
+  }
+
+  function renderPedido() {
+    const body = $('#pedido-body');
+    const lineas = BurgerHouse.cart.lineas;
+    if (!lineas.length) {
+      body.innerHTML = '<div class="vacio"><svg class="vacio__ico" aria-hidden="true"><use href="#bh-bolsa"/></svg>' +
+        '<p>Todavía no has elegido nada.</p>' +
+        '<button class="btn btn--ghost" type="button" data-cerrar-pedido>Ver el menú</button></div>';
+      $('#pedido-foot').hidden = true;
+      return;
+    }
+    $('#pedido-foot').hidden = false;
+
+    const pm = BurgerHouse.config.promoMaquila;
+    body.innerHTML =
+      lineas.map((l, i) => lineaHTML(l, i)).join('') +
+      '<button class="mas" type="button" data-cerrar-pedido>+ Agregar algo más</button>' +
+      '<div class="entrega">' +
+        '<div class="entrega__fijo"><svg aria-hidden="true"><use href="#bh-bolsa"/></svg>' +
+        '<span>Paso a recoger al local</span></div>' +
+        '<label class="campo"><span class="campo__lbl">¿A nombre de quién? <em>opcional</em></span>' +
+        '<input type="text" id="f-nombre" autocomplete="name" placeholder="Para que sepan de quién es" /></label>' +
+        (pm && pm.activa ? maquilaHTML(pm) : '') +
+      '</div>' +
+      '<button class="vaciar" type="button" data-vaciar>Vaciar pedido</button>';
+    pintarTotales();
+  }
+
+  function lineaHTML(l, i) {
+    const it = item(l.catId, l.itemId) || { nombre: l.nombre, img: null };
+    const det = [];
+    const quitar = l.mods.filter((m) => m.tipo === 'quitar').map((m) => m.nombre.toLowerCase());
+    const agregar = l.mods.filter((m) => m.tipo === 'agregar').map((m) => (m.cantidad > 1 ? m.cantidad + '× ' : '') + m.nombre.toLowerCase());
+    const elegir = l.mods.filter((m) => m.tipo === 'elegir').map((m) => m.nombre.toLowerCase());
+    if (elegir.length) det.push(elegir.join(', '));
+    if (quitar.length) det.push('sin ' + quitar.join(', '));
+    if (agregar.length) det.push('con ' + agregar.join(', '));
+    if (l.nota) det.push('“' + l.nota + '”');
+    const pers = tienePersonalizacion(l.catId, l.itemId);
+
+    return '<article class="li">' +
+      imgHTML(it, 'li__img') +
+      '<div class="li__txt">' +
+        '<h4>' + esc(l.nombre) + '</h4>' +
+        (det.length ? '<p class="li__det">' + esc(det.join(' · ')) + '</p>' : '') +
+        (pers ? '<button class="li__edit" type="button" data-editar="' + i + '">Editar</button>' : '') +
+      '</div>' +
+      '<div class="li__der">' +
+        '<span class="li__precio">' + peso(BurgerHouse.cart.precioLinea(l)) + '</span>' +
+        '<div class="qty">' +
+          '<button type="button" data-menos-li="' + i + '" aria-label="Quitar uno de ' + esc(l.nombre) + '">−</button>' +
+          '<b>' + l.cantidad + '</b>' +
+          '<button type="button" data-mas-li="' + i + '" aria-label="Agregar uno de ' + esc(l.nombre) + '">+</button>' +
+        '</div>' +
+      '</div>' +
+    '</article>';
+  }
+
+  /* La casilla de maquila con el ahorro en pesos. Un "10%" abstracto se ignora;
+     "ahorra $31" es una cifra que el cliente compara con el total que ya ve. */
+  function maquilaHTML(pm) {
+    const ahorro = Math.round(BurgerHouse.cart.total() * pm.porcentaje / 100);
+    return '<label class="maquila" id="maquila-caja">' +
+      '<input type="checkbox" id="f-maquila" />' +
+      '<span class="maquila__txt">' +
+        '<b>¿Trabajas en maquila?</b>' +
+        '<small>Presenta tu credencial al recoger y ahorra <b class="maquila__ahorro">' + peso(ahorro) + '</b></small>' +
+      '</span>' +
+      '<span class="maquila__pct" aria-hidden="true">−' + pm.porcentaje + '%</span>' +
+    '</label>';
+  }
+
+  function pintarTotales() {
+    const sub = BurgerHouse.cart.total();
+    const pm = BurgerHouse.config.promoMaquila;
+    const maq = $('#f-maquila') && $('#f-maquila').checked;
+    const desc = (maq && pm && pm.activa) ? Math.round(sub * pm.porcentaje / 100) : 0;
+    const cont = $('#pedido-totales');
+    if (!cont) return;
+    cont.innerHTML =
+      (desc ? '<div class="tot"><span>Subtotal</span><b>' + peso(sub) + '</b></div>' +
+              '<div class="tot tot--desc"><span>Descuento maquila</span><b>−' + peso(desc) + '</b></div>' : '') +
+      '<div class="tot tot--grande"><span>Total</span><b>' + peso(sub - desc) + '</b></div>';
+  }
+
+  /* ═════════ Enviar ═════════ */
+  function enviar() {
+    const nombre = ($('#f-nombre') && $('#f-nombre').value) || '';
+    const maquila = !!($('#f-maquila') && $('#f-maquila').checked);
+    folioActual = folioActual || BurgerHouse.whatsapp.folio();
+    const r = BurgerHouse.whatsapp.enviarPedido({ nombre: nombre, maquila: maquila, folio: folioActual });
+    if (!r.msg) return;
+    if (r.ok) pantallaExito(r);
+    else pantallaManual(r);
+  }
+
+  function pantallaExito(r) {
+    $('#pedido-body').innerHTML =
+      '<div class="exito"><svg class="exito__ico" aria-hidden="true"><use href="#bh-check"/></svg>' +
+      '<h3>Tu pedido va en camino</h3>' +
+      '<p>Se abrió WhatsApp con la comanda <b>' + esc(folioActual) + '</b>. Solo dale enviar para que llegue a la cocina.</p>' +
+      '<p class="exito__nota">Si no se abrió, <button class="link" type="button" data-manual>ábrelo aquí</button>.</p>' +
+      '<button class="btn btn--ghost" type="button" data-nuevo>Empezar otro pedido</button></div>';
+    $('#pedido-foot').hidden = true;
+    window.__bhUrl = r.url;
+  }
+
+  function pantallaManual(r) {
+    window.__bhUrl = r.url;
+    window.__bhMsg = r.msg;
+    $('#pedido-body').innerHTML =
+      '<div class="exito exito--alerta">' +
+      '<h3>No pudimos abrir WhatsApp</h3>' +
+      '<p>Tu navegador bloqueó la ventana. Tu pedido <b>' + esc(folioActual) + '</b> está listo — ábrelo o cópialo:</p>' +
+      '<a class="btn btn--rojo" href="' + esc(r.url) + '" target="_blank" rel="noopener">Abrir WhatsApp</a>' +
+      '<button class="btn btn--ghost" type="button" data-copiar>Copiar la comanda</button>' +
+      '<p class="exito__nota">Si copias, pégalo en un mensaje a ' + esc(BurgerHouse.config.whatsapp) + '.</p></div>';
+    $('#pedido-foot').hidden = true;
+  }
+
+  /* ═════════ Aviso de pedido restaurado ═════════ */
+  function avisoRestaurado() {
+    if (!BurgerHouse.cart.restaurado) return;
+    const min = BurgerHouse.cart.minutosDesdeGuardado();
+    const cuando = min < 60 ? 'hace ' + min + ' min' : 'hace ' + Math.round(min / 60) + ' h';
+    const el = document.createElement('div');
+    el.className = 'aviso';
+    el.setAttribute('role', 'status');
+    el.innerHTML = '<p>Retomamos tu pedido de ' + cuando + '.</p>' +
+      '<div class="aviso__b"><button type="button" data-aviso-ver>Ver</button>' +
+      '<button type="button" data-aviso-no>Descartar</button></div>';
+    document.body.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('aviso--on'));
+    BurgerHouse.cart.marcarAvisado();
+    const quitar = () => { el.classList.remove('aviso--on'); setTimeout(() => el.remove(), 250); };
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('[data-aviso-ver]')) { quitar(); abrirPedido(); }
+      if (e.target.closest('[data-aviso-no]')) { quitar(); BurgerHouse.cart.descartarRestaurado(); }
+    });
+    setTimeout(quitar, 12000);
+  }
+
+  /* ═════════ Horario ═════════ */
+  function pintarHorario() {
+    const est = BurgerHouse.whatsapp.estadoHorario();
+    const el = $('#horario');
+    if (el) {
+      el.textContent = est.abierto ? 'Abierto ahora · cierra 10:30 pm' : 'Cerrado · abre ' + (est.proximo || est.texto);
+      el.classList.toggle('horario--off', !est.abierto);
+    }
+    if (!est.abierto) {
+      const b = $('#aviso-cerrado');
+      if (b) {
+        b.hidden = false;
+        b.textContent = 'Ahorita estamos cerrados. Abrimos ' + (est.proximo || est.texto) + '. Puedes dejar tu pedido armado.';
+      }
+    }
+  }
+
+  /* ═════════ Eventos ═════════ */
   function renderEventos() {
     const cont = $('#eventos-grid');
     if (!cont) return;
     cont.innerHTML = BurgerHouse.EVENTOS.map((p) =>
-      '<article class="paquete">' +
-        '<div class="paquete__info"><div class="paquete__top">' +
-          '<span class="paquete__nombre">Paquete ' + esc(p.nombre) + '<small>' + p.personas + ' personas</small></span>' +
-          '<span class="paquete__precio">' + num(p.precio) + '</span></div>' +
-          '<div class="paquete__incluye">' + p.incluye.map((x) => '<span>' + esc(x) + '</span>').join('') + '</div></div>' +
-        '<div class="paquete__cta">' + (p.destacado ? '<span class="paquete__badge">' + esc(p.destacado) + '</span> ' : '') +
-          '<button class="link" type="button" data-evento="' + esc(p.nombre) + '">Cotizar por WhatsApp <span aria-hidden="true">→</span></button></div>' +
-      '</article>'
-    ).join('');
-    cont.addEventListener('click', (e) => { const b = e.target.closest('[data-evento]'); if (b) BurgerHouse.whatsapp.cotizarEvento(b.getAttribute('data-evento')); });
+      '<article class="pack' + (p.destacado ? ' pack--on' : '') + '">' +
+        (p.destacado ? '<span class="pack__badge">' + esc(p.destacado) + '</span>' : '') +
+        '<h3>' + esc(p.nombre) + '</h3>' +
+        '<p class="pack__gente">' + p.personas + ' personas</p>' +
+        '<p class="pack__precio">' + peso(p.precio) + '</p>' +
+        '<ul>' + p.incluye.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul>' +
+        '<button class="btn btn--ghost" type="button" data-evento="' + esc(p.nombre) + '">Cotizar</button>' +
+      '</article>').join('');
   }
 
-  /* ---------- focus trap ---------- */
-  function trapFocus(container) {
-    container.onkeydown = (e) => {
-      if (e.key === 'Escape') { cerrarOrden(); return; }
-      if (e.key !== 'Tab') return;
-      const foc = container.querySelectorAll('button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-      if (!foc.length) return;
-      const first = foc[0], last = foc[foc.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    };
+  /* ═════════ Scroll lock ═════════ */
+  function lockScroll() {
+    scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = -scrollY + 'px';
+    document.body.style.width = '100%';
+  }
+  function unlockScroll() {
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    window.scrollTo(0, scrollY);
   }
 
-  /* ---------- init ---------- */
+  /* ═════════ Enlaces de WhatsApp ═════════ */
+  function pintarWhatsApp() {
+    const n = BurgerHouse.config.whatsapp;
+    $$('[data-wa]').forEach((a) => {
+      a.href = 'https://wa.me/' + n;
+      a.rel = 'noopener';
+      a.target = '_blank';
+    });
+  }
+
+  /* ═════════ Binds ═════════ */
+  function bind() {
+    // Carta: agregar / personalizar
+    document.addEventListener('click', (e) => {
+      const add = e.target.closest('[data-add]');
+      if (add) {
+        const [c, i] = add.getAttribute('data-add').split(':');
+        abrirHoja(c, i);
+        return;
+      }
+      if (e.target.closest('[data-abrir-pedido]')) { abrirPedido(); return; }
+      // El atajo del nav abre el resumen solo si ya hay algo; si no, deja que
+      // el enlace haga su trabajo y baje al menú.
+      const navCta = e.target.closest('#nav-cta');
+      if (navCta) {
+        if (BurgerHouse.cart.count() > 0) { e.preventDefault(); abrirPedido(); }
+        return;
+      }
+      if (e.target.closest('[data-cerrar-pedido]')) { cerrarPedido(); return; }
+      const ev = e.target.closest('[data-evento]');
+      if (ev) { BurgerHouse.whatsapp.cotizarEvento(ev.getAttribute('data-evento')); return; }
+    });
+
+    // Hoja
+    $('#hoja-scrim').addEventListener('click', cerrarHoja);
+    $('#hoja-cerrar').addEventListener('click', cerrarHoja);
+    $('#hoja-cta').addEventListener('click', confirmarHoja);
+    $('#hoja-body').addEventListener('change', (e) => {
+      const inp = e.target.closest('input');
+      if (inp) {
+        const step = $('#hoja-body [data-step="' + inp.value + '"]');
+        if (step) step.hidden = !inp.checked;
+      }
+      calcHoja();
+    });
+    $('#hoja-body').addEventListener('input', calcHoja);
+    $('#hoja-body').addEventListener('click', (e) => {
+      const mas = e.target.closest('[data-mas]');
+      const menos = e.target.closest('[data-menos]');
+      if (!mas && !menos) return;
+      e.preventDefault();
+      const id = (mas || menos).getAttribute(mas ? 'data-mas' : 'data-menos');
+      const b = $('#hoja-body [data-cant="' + id + '"]');
+      if (!b) return;
+      const grupos = modsDe(hojaCtx.catId, hojaCtx.itemId);
+      let max = 9;
+      grupos.forEach((g) => g.opciones.forEach((o) => { if (o.id === id && o.max) max = o.max; }));
+      let n = parseInt(b.textContent, 10) || 1;
+      n = mas ? Math.min(n + 1, max) : Math.max(n - 1, 1);
+      b.textContent = n;
+      calcHoja();
+    });
+
+    // Pedido
+    $('#pedido-cerrar').addEventListener('click', cerrarPedido);
+    $('#pedido-body').addEventListener('click', (e) => {
+      const mas = e.target.closest('[data-mas-li]');
+      const menos = e.target.closest('[data-menos-li]');
+      const editar = e.target.closest('[data-editar]');
+      const vaciar = e.target.closest('[data-vaciar]');
+      if (mas) {
+        const i = +mas.getAttribute('data-mas-li');
+        BurgerHouse.cart.updateCantidad(i, BurgerHouse.cart.lineas[i].cantidad + 1);
+      } else if (menos) {
+        const i = +menos.getAttribute('data-menos-li');
+        BurgerHouse.cart.updateCantidad(i, BurgerHouse.cart.lineas[i].cantidad - 1);
+      } else if (editar) {
+        const i = +editar.getAttribute('data-editar');
+        const l = BurgerHouse.cart.lineas[i];
+        cerrarPedido();
+        setTimeout(() => abrirHoja(l.catId, l.itemId, i), 240);
+      } else if (vaciar) {
+        if (confirm('¿Vaciar todo el pedido?')) { BurgerHouse.cart.clear(); }
+      } else if (e.target.closest('[data-nuevo]')) {
+        BurgerHouse.cart.clear(); folioActual = null; cerrarPedido();
+      } else if (e.target.closest('[data-manual]')) {
+        if (window.__bhUrl) window.open(window.__bhUrl, '_blank', 'noopener');
+      } else if (e.target.closest('[data-copiar]')) {
+        const b = e.target.closest('[data-copiar]');
+        navigator.clipboard.writeText(window.__bhMsg || '').then(() => {
+          b.textContent = 'Comanda copiada';
+          setTimeout(() => { b.textContent = 'Copiar la comanda'; }, 2200);
+        });
+      }
+    });
+    $('#pedido-body').addEventListener('change', (e) => {
+      if (e.target.id === 'f-maquila') pintarTotales();
+    });
+    $('#pedido-enviar').addEventListener('click', enviar);
+
+    // Escape cierra la capa de arriba
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (hojaCtx) cerrarHoja();
+      else if (!$('#pedido').hidden) cerrarPedido();
+    });
+  }
+
+  /* ═════════ Init ═════════ */
   function init() {
-    renderAntojo();
+    renderTabs();
     renderMenu();
     renderEventos();
-    bindOrden();
-    initHeroRotator();
-    initHeader();
+    sincronizarAlturas();
+    aplicarVista(vistaGuardada());
+    bindVista();
+    bindTabs();
+    bind();
+    pintarWhatsApp();
+    pintarHorario();
 
-    // "Añadir" en la carta de la página → personalizable abre la hoja; simple agrega directo
-    $('#menu-cats').addEventListener('click', (e) => {
-      const b = e.target.closest('[data-add]');
-      if (!b) return;
-      const [c, i] = b.getAttribute('data-add').split(':');
-      const it = item(c, i);
-      if (!it) return;
-      if (esPersonalizable(c, i)) { abrirCustom(c, i); return; }
-      BurgerHouse.cart.add({ categoriaId: c, categoriaNombre: cat(c).nombre, itemId: i, nombre: it.nombre, precio: it.precio, cantidad: 1, nota: '' });
-      pulsoFab();
-    });
-
-    // Chips del hero / tarjetas de antojo → abren el flujo guiado en esa categoría
-    document.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-cat-abrir]');
-      if (b) abrirOrden('items', b.getAttribute('data-cat-abrir'));
-    });
-
-    // Cambios del carrito → refrescar todo lo visible
-    BurgerHouse.cart.onChange(() => {
-      refreshAddCounts();
-      actualizaFab();
-      if ($('#orden').classList.contains('is-open') && !mostrandoExito) {
-        if (vista === 'items') { refreshItemCtrls(); renderFootOrden(); }
-        else if (vista === 'resumen') { refreshResumen(); renderFootOrden(); }
-        else renderFootOrden();
+    BurgerHouse.cart.onChange((snap) => {
+      renderBarra(snap);
+      renderNavCta(snap);
+      refreshContadores();
+      if (!$('#pedido').hidden) {
+        // Redibujar el resumen borraría lo que el cliente ya llenó: se rescata
+        // el nombre, el foco y —crítico— la casilla de maquila, para que nadie
+        // pierda su descuento por cambiar una cantidad.
+        const foco = document.activeElement;
+        const eraNombre = foco && foco.id === 'f-nombre';
+        const nombre = $('#f-nombre') ? $('#f-nombre').value : null;
+        const maquila = $('#f-maquila') ? $('#f-maquila').checked : false;
+        renderPedido();
+        if (nombre && $('#f-nombre')) $('#f-nombre').value = nombre;
+        if (maquila && $('#f-maquila')) { $('#f-maquila').checked = true; pintarTotales(); }
+        if (eraNombre && $('#f-nombre')) $('#f-nombre').focus();
       }
     });
 
-    // Aperturas
-    $('#fab').addEventListener('click', abrirDesdeFab);
-    document.querySelectorAll('[data-abrir-orden]').forEach((b) => b.addEventListener('click', () => abrirOrden('categorias')));
-    const navOrd = $('#nav-ordenar'); if (navOrd) navOrd.addEventListener('click', () => abrirOrden('categorias'));
-    const navCart = $('#nav-cart'); if (navCart) navCart.addEventListener('click', () => abrirOrden('resumen'));
+    avisoRestaurado();
 
-    document.querySelectorAll('[data-scroll]').forEach((a) =>
-      a.addEventListener('click', (e) => { e.preventDefault(); const t = document.querySelector(a.getAttribute('data-scroll')); if (t) t.scrollIntoView({ behavior: 'smooth' }); }));
-
-    actualizaFab();
+    // Al rotar el teléfono o cambiar el ancho, las alturas pegajosas cambian.
+    let t;
+    window.addEventListener('resize', () => {
+      clearTimeout(t);
+      t = setTimeout(sincronizarAlturas, 150);
+    });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 
-  return { abrirOrden, cerrarOrden };
+  return { abrirPedido, abrirHoja };
 })();

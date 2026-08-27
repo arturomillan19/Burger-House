@@ -1,193 +1,219 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-MX">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#cf1d1a" />
-  <meta name="description" content="Burger House · Hamburguesas, entradas y pizzas en Guaymas, Sonora. Sabor de cadena, calidad hecha en casa. Arma tu pedido y mándalo por WhatsApp." />
+  <meta name="theme-color" content="#C0342A" />
+  <meta name="description" content="Burger House · Hamburguesas, pizzas y entradas en Guaymas, Sonora. Arma tu pedido y llega directo por WhatsApp." />
   <title>Burger House · Guaymas</title>
 
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%94%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Black&display=swap" />
+  <link rel="preload" as="image" href="Media/hero.jpg" fetchpriority="high" />
+  <link rel="stylesheet" href="css/styles.css?v=25" />
+</head>
+<body>
 
-  <!-- Fuentes auto-alojadas (ver css/styles.css). Sin dependencias externas. -->
-  <link rel="preload" href="fonts/nunito-var.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=14" />
-
-  <!-- Logo monolínea reutilizable -->
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- ═══ Iconos: familia propia, trazo 1.7, hereda currentColor ═══ -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
     <symbol id="bh-burger" viewBox="0 0 32 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M3.5 9.5C3.5 4.8 9 2.5 16 2.5S28.5 4.8 28.5 9.5Z"/>
+      <path d="M4 10.5C4 6 9.4 2.5 16 2.5S28 6 28 10.5"/>
       <path d="M4 13h24"/>
       <path d="M4.5 16.5h23c0 3-4.6 5-11.5 5s-11.5-2-11.5-5Z"/>
       <circle cx="11.5" cy="6.6" r=".55" fill="currentColor" stroke="none"/>
       <circle cx="16.5" cy="5.7" r=".55" fill="currentColor" stroke="none"/>
       <circle cx="21" cy="6.6" r=".55" fill="currentColor" stroke="none"/>
     </symbol>
+    <symbol id="bh-papas" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 10h12l-1.3 10.5a1.5 1.5 0 0 1-1.5 1.3H8.8a1.5 1.5 0 0 1-1.5-1.3L6 10Z"/>
+      <path d="M5.5 10h13"/>
+      <path d="M9 10V4.2M12 10V2.8M15 10V4.8"/>
+    </symbol>
+    <symbol id="bh-pizza" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3 3.6 19.4a1 1 0 0 0 1.3 1.3L21.3 12"/>
+      <path d="M12 3c5.1 0 9.3 4.1 9.3 9"/>
+      <circle cx="10.4" cy="11.4" r=".9" fill="currentColor" stroke="none"/>
+      <circle cx="14.8" cy="9.6" r=".9" fill="currentColor" stroke="none"/>
+      <circle cx="8.4" cy="16" r=".9" fill="currentColor" stroke="none"/>
+    </symbol>
+    <symbol id="bh-vaso" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 7h12l-1.2 13.2a1.5 1.5 0 0 1-1.5 1.3H8.7a1.5 1.5 0 0 1-1.5-1.3L6 7Z"/>
+      <path d="M5.6 7h12.8"/>
+      <path d="M13.5 2.5 11 7"/>
+      <path d="M7 12.5h10"/>
+    </symbol>
+    <symbol id="bh-bolsa" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5.4 8h13.2l-1 12.1a1.5 1.5 0 0 1-1.5 1.4H7.9a1.5 1.5 0 0 1-1.5-1.4L5.4 8Z"/>
+      <path d="M8.6 8V6a3.4 3.4 0 0 1 6.8 0v2"/>
+    </symbol>
+    <symbol id="bh-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9.2"/>
+      <path d="m8 12.3 2.7 2.7L16.2 9.5"/>
+    </symbol>
   </svg>
-</head>
-<body>
 
-  <!-- NAV -->
-  <header class="masthead" id="masthead">
-    <div class="wrap masthead__inner">
-      <a href="#top" class="brand" aria-label="Burger House — inicio">
-        <svg class="brand__mark" aria-hidden="true"><use href="#bh-burger"/></svg>
-        <span class="brand__word">Burger<em>House</em></span>
+  <!-- ═══ NAV ═══ -->
+  <header class="nav" id="nav">
+    <div class="wrap nav__in">
+      <a href="#top" class="marca" aria-label="Burger House — inicio">
+        <svg class="marca__ico" aria-hidden="true"><use href="#bh-burger"/></svg>
+        <span class="marca__txt">Burger<b>House</b></span>
       </a>
-      <div class="masthead__right">
-        <span class="masthead__meta">Jue–Dom · 6:30–10:30 pm · Guaymas</span>
-        <button class="masthead__cta" id="nav-ordenar" type="button">Ordenar</button>
-        <button class="masthead__cart" id="nav-cart" type="button" hidden aria-label="Ver mi pedido">
-          Ver pedido <span class="masthead__cart-n" id="nav-cart-n">0</span>
-        </button>
+      <div class="nav__der">
+        <span class="horario" id="horario">Jue a Dom · 6:30–10:30 pm</span>
+        <a class="nav__cta" id="nav-cta" href="#menu">
+          <span id="nav-cta-txt">Hacer pedido</span>
+          <span class="nav__n" id="nav-cta-n" hidden>0</span>
+        </a>
       </div>
     </div>
   </header>
 
   <main id="top">
-    <!-- HERO · foto de la hamburguesa a sangre completa -->
-    <section class="hero" id="hero">
-      <img class="hero__bg" src="Media/hero.jpg?v=14" alt="Hamburguesa de Burger House recién hecha" fetchpriority="high" />
-      <div class="wrap hero__inner">
+
+    <!-- ═══ HERO ═══ -->
+    <section class="hero">
+      <img class="hero__bg" src="Media/hero.jpg" alt="" width="1600" height="1067" fetchpriority="high" decoding="async" />
+      <div class="wrap hero__in">
         <div class="hero__texto">
-          <p class="eyebrow hero__eyebrow">Guaymas, Sonora · Hecho en casa</p>
-          <h1 class="hero__title">
-            <span class="hero__fixed">Se te antoja</span>
-            <span class="hero__rot" aria-live="polite"><span class="hero__rot-word" id="hero-rot">una burger</span></span>
-          </h1>
-          <p class="hero__lede">Pídela en un par de toques. La comanda llega directo por WhatsApp.</p>
-          <div class="hero__cta">
-            <button class="btn btn--onred btn--xl" type="button" data-abrir-orden>Realizar pedido ahora</button>
-          </div>
-          <div class="hero__chips" role="group" aria-label="Empieza por categoría">
-            <span class="hero__chips-lbl">o empieza por:</span>
-            <button class="hero__chip" type="button" data-cat-abrir="burgers">Burgers</button>
-            <button class="hero__chip" type="button" data-cat-abrir="pizzas">Pizzas</button>
-            <button class="hero__chip" type="button" data-cat-abrir="entradas">Entradas</button>
-            <button class="hero__chip" type="button" data-cat-abrir="bebidas">Bebidas</button>
-          </div>
+          <p class="hero__ojo">Guaymas, Sonora · desde 2024</p>
+          <h1 class="hero__t">Sabor de cadena.<br><span>Hecho en casa.</span></h1>
+          <p class="hero__d">Arma tu pedido con todo el detalle. Llega directo a la cocina por WhatsApp.</p>
+          <a class="btn btn--rojo btn--xl" href="#menu">Ver el menú</a>
         </div>
       </div>
-      <span class="hero__scrolldown" aria-hidden="true">desliza</span>
     </section>
 
-    <!-- Marquee (cinta en movimiento) -->
-    <div class="marquee" aria-hidden="true">
-      <div class="marquee__track">
-        <span>Burgers</span><span class="marquee__dot">●</span><span>Pizzas artesanales</span><span class="marquee__dot">●</span><span>Papas &amp; entradas</span><span class="marquee__dot">●</span><span>Para llevar</span><span class="marquee__dot">●</span><span>Hecho en casa</span><span class="marquee__dot">●</span>
-        <span>Burgers</span><span class="marquee__dot">●</span><span>Pizzas artesanales</span><span class="marquee__dot">●</span><span>Papas &amp; entradas</span><span class="marquee__dot">●</span><span>Para llevar</span><span class="marquee__dot">●</span><span>Hecho en casa</span><span class="marquee__dot">●</span>
+    <!-- ═══ Banda de maquila — el descuento es un argumento de venta, no un aviso ═══ -->
+    <div class="banda">
+      <div class="wrap banda__in">
+        <span class="banda__cifra" aria-hidden="true">10%</span>
+        <p class="banda__txt">
+          <b>de descuento si trabajas en maquila.</b>
+          <span>Solo presenta tu credencial de la planta al recoger.</span>
+        </p>
       </div>
     </div>
 
-    <!-- Promo maquila -->
-    <div class="promo-strip">
-      <div class="wrap promo-strip__in">
-        <span class="promo-strip__ico" aria-hidden="true">🏭</span>
-        <p><b>¿Trabajas en maquila?</b> 10% de descuento presentando tu credencial de la planta.</p>
-      </div>
-    </div>
-
-    <!-- ¿Qué se te antoja? — acceso guiado directo -->
-    <section class="sec wrap antojo" id="antojo">
-      <div class="sec-head">
-        <div class="sec-head__t">
-          <span class="eyebrow">Ordena en 3 toques</span>
-          <h2 class="display">¿Qué se te <em>antoja?</em></h2>
-          <p>Elige y arma tu pedido. Nosotros lo preparamos al momento.</p>
-        </div>
-      </div>
-      <div class="antojo-grid" id="antojo-grid"><!-- inyectado por js/ui.js --></div>
-    </section>
-
-    <!-- MENÚ (para ver todo con calma) -->
+    <!-- ═══ MENÚ ═══ -->
     <section class="menu" id="menu">
       <div class="wrap">
-        <div class="sec-head">
-          <div class="sec-head__t">
-            <span class="eyebrow">La carta completa</span>
-            <h2 class="display">El <em>menú</em></h2>
-            <p>Toca “Añadir” en lo que se te antoje, o usa el botón <b>Arma tu pedido</b> para ir guiado.</p>
-          </div>
+        <div class="menu__head">
+          <h2>El menú</h2>
+          <p>Toca cualquier platillo para armarlo a tu gusto.</p>
         </div>
-        <div id="menu-cats"><!-- inyectado por js/ui.js --></div>
+      </div>
+      <div class="tabs-wrap"><div class="wrap tabs-row">
+        <div class="tabs" id="tabs" role="tablist" aria-label="Categorías del menú"></div>
+        <div class="vista" role="group" aria-label="Forma de ver el menú">
+          <button class="vista__b" type="button" data-vista="cuadricula" aria-pressed="true">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1"/>
+              <rect x="1.5" y="9" width="5.5" height="5.5" rx="1"/><rect x="9" y="9" width="5.5" height="5.5" rx="1"/>
+            </svg>Cuadrícula
+          </button>
+          <button class="vista__b" type="button" data-vista="lista" aria-pressed="false">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <path d="M2 4h12M2 8h12M2 12h12"/>
+            </svg>Lista
+          </button>
+        </div>
+      </div></div>
+      <div class="wrap">
+        <p class="cerrado" id="aviso-cerrado" hidden></p>
+        <div id="menu-cats"></div>
       </div>
     </section>
 
-    <!-- Foto editorial -->
-    <div class="wrap">
-      <figure class="plate">
-        <img class="plate__img" src="Media/burgers.jpg" alt="Hamburguesa con papas en canasta" loading="lazy" />
-        <figcaption class="plate__tag">Recién hechas · para llevar</figcaption>
-      </figure>
-    </div>
-
-    <!-- EVENTOS -->
+    <!-- ═══ EVENTOS ═══ -->
     <section class="eventos" id="eventos">
       <div class="wrap">
-        <div class="sec-head">
-          <div class="sec-head__t">
-            <span class="eyebrow">Para tu fiesta</span>
-            <h2 class="display">Paquetes para <em>eventos</em></h2>
-            <p>Cheese burgers para todos tus invitados, con papas, cubiertos y entrega en el lugar.</p>
-          </div>
+        <div class="menu__head menu__head--claro">
+          <h2>Para tu fiesta</h2>
+          <p>Cheese burgers para todos tus invitados, con papas, cubiertos y entrega en el lugar.</p>
         </div>
-        <div class="eventos-grid" id="eventos-grid"><!-- inyectado por js/ui.js --></div>
+        <div class="packs" id="eventos-grid"></div>
       </div>
     </section>
   </main>
 
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="wrap footer__inner">
-      <a href="#top" class="brand" aria-label="Burger House">
-        <svg class="brand__mark" aria-hidden="true"><use href="#bh-burger"/></svg>
-        <span class="brand__word">Burger<em>House</em></span>
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="pie">
+    <div class="wrap pie__in">
+      <a href="#top" class="marca marca--pie" aria-label="Burger House">
+        <svg class="marca__ico" aria-hidden="true"><use href="#bh-burger"/></svg>
+        <span class="marca__txt">Burger<b>House</b></span>
       </a>
-      <div class="footer__grid">
-        <div class="footer__col">
-          <h4>Burger House</h4>
-          <p>Sabor de cadena, calidad hecha en casa. Guaymas, Sonora · desde 2024.</p>
-        </div>
-        <div class="footer__col">
-          <h4>Visítanos</h4>
+      <div class="pie__cols">
+        <div>
+          <h3>Dónde</h3>
           <p>Blvd. Luis Encinas</p>
+          <p>Dentro del estacionamiento de comida</p>
           <p>Guaymas, Sonora</p>
-          <p><b>Jueves a Domingo</b></p>
+        </div>
+        <div>
+          <h3>Cuándo</h3>
+          <p>Jueves a Domingo</p>
           <p>6:30 – 10:30 pm</p>
         </div>
-        <div class="footer__col">
-          <h4>Pedidos</h4>
-          <a href="tel:+16232399551">Por WhatsApp</a>
-          <a href="https://www.instagram.com/burgerhousegyms/" target="_blank" rel="noopener">Instagram →</a>
+        <div>
+          <h3>Contacto</h3>
+          <p><a data-wa href="#">Escríbenos por WhatsApp</a></p>
+          <p><a href="https://www.instagram.com/burgerhousegyms/" target="_blank" rel="noopener">Instagram</a></p>
         </div>
       </div>
-      <div class="footer__bottom">
-        <span>© 2026 Burger House · Guaymas, Son.</span>
-        <span>Hecho en casa</span>
-      </div>
+      <p class="pie__abajo">© 2026 Burger House · Guaymas, Son.</p>
     </div>
   </footer>
 
-  <!-- Botón flotante SIEMPRE visible -->
-  <button class="fab" id="fab" type="button" aria-label="Arma tu pedido">
-    <svg class="fab__ico" aria-hidden="true"><use href="#bh-burger"/></svg>
-    <span class="fab__txt" id="fab-txt">Arma tu pedido</span>
-  </button>
-
-  <!-- ===== FLUJO GUIADO (overlay a pantalla completa) ===== -->
-  <div class="orden" id="orden" role="dialog" aria-modal="true" aria-label="Arma tu pedido" aria-hidden="true">
-    <header class="orden__top">
-      <button class="orden__back" id="orden-back" type="button" hidden><span aria-hidden="true">←</span> <span class="orden__back-txt">Categorías</span></button>
-      <span class="orden__title" id="orden-title">Arma tu pedido</span>
-      <button class="orden__close" id="orden-close" type="button" aria-label="Cerrar">×</button>
-    </header>
-    <div class="orden__body" id="orden-body"><!-- inyectado por js/ui.js --></div>
-    <footer class="orden__foot" id="orden-foot"><!-- inyectado por js/ui.js --></footer>
+  <!-- ═══ Barra fija de pedido ═══ -->
+  <div class="barra" id="barra" hidden>
+    <p class="barra__promo" id="barra-promo" hidden></p>
+    <div class="wrap barra__in">
+      <button class="barra__b" type="button" data-abrir-pedido>
+        <span class="barra__n" id="barra-n">0</span>
+        <span class="barra__txt">Ver mi pedido</span>
+        <span class="barra__total" id="barra-total">$0</span>
+      </button>
+    </div>
   </div>
 
-  <script defer src="js/data.js?v=14"></script>
-  <script defer src="js/cart.js?v=14"></script>
-  <script defer src="js/whatsapp.js?v=14"></script>
-  <script defer src="js/ui.js?v=14"></script>
+  <!-- ═══ Hoja de personalización ═══ -->
+  <div class="scrim" id="hoja-scrim" hidden></div>
+  <section class="hoja" id="hoja" role="dialog" aria-modal="true" aria-labelledby="hoja-titulo" hidden>
+    <header class="hoja__head">
+      <h2 id="hoja-titulo">Personalizar</h2>
+      <button class="cerrar" id="hoja-cerrar" type="button" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+    <div class="hoja__body" id="hoja-body"></div>
+    <footer class="hoja__foot">
+      <button class="btn btn--rojo btn--full" id="hoja-cta" type="button">Agregar</button>
+    </footer>
+  </section>
+
+  <!-- ═══ Pedido ═══ -->
+  <section class="pedido" id="pedido" role="dialog" aria-modal="true" aria-labelledby="pedido-titulo" hidden>
+    <header class="pedido__head">
+      <h2 id="pedido-titulo">Tu pedido</h2>
+      <button class="cerrar" id="pedido-cerrar" type="button" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+    <div class="pedido__body" id="pedido-body"></div>
+    <footer class="pedido__foot" id="pedido-foot" hidden>
+      <div id="pedido-totales"></div>
+      <button class="btn btn--rojo btn--full btn--pill" id="pedido-enviar" type="button">Enviar por WhatsApp</button>
+      <p class="pedido__nota">Se abre WhatsApp con tu comanda lista. Solo dale enviar.</p>
+    </footer>
+  </section>
+
+  <script defer src="js/data.js?v=25"></script>
+  <script defer src="js/cart.js?v=25"></script>
+  <script defer src="js/whatsapp.js?v=25"></script>
+  <script defer src="js/ui.js?v=25"></script>
 </body>
 </html>
