@@ -54,6 +54,18 @@ BurgerHouse.ui = (function () {
   }
 
   /* ═════════ Carta en la página ═════════ */
+  // Mascota retro (rescatada del menú impreso) por categoría: llena el blanco
+  // del encabezado y amarra la página con la identidad del local.
+  const DECO = { burgers: 'burger', entradas: 'papas', pizzas: 'pizza', bebidas: 'vaso' };
+  function catHeadHTML(c) {
+    const d = DECO[c.id];
+    const deco = d ? '<img class="cat__deco" src="Media/deco/' + d + '.png" alt="" aria-hidden="true" loading="lazy" decoding="async" />' : '';
+    return '<div class="cat__head">' +
+      '<div class="cat__tit"><h3>' + esc(c.nombre) + '</h3><p>' + esc(c.desc || '') + '</p></div>' +
+      deco +
+    '</div>';
+  }
+
   function renderMenu() {
     const cont = $('#menu-cats');
     if (!cont) return;
@@ -61,7 +73,7 @@ BurgerHouse.ui = (function () {
       if (c.id === 'bebidas') return bebidasHTML(c);
       const filas = c.items.map((it) => filaHTML(c, it)).join('');
       return '<section class="cat" id="cat-' + c.id + '">' +
-        '<div class="cat__head"><h3>' + esc(c.nombre) + '</h3><p>' + esc(c.desc || '') + '</p></div>' +
+        catHeadHTML(c) +
         '<div class="filas">' + filas + '</div></section>';
     }).join('');
   }
@@ -80,7 +92,7 @@ BurgerHouse.ui = (function () {
         '</div>' +
       '</div>').join('');
     return '<section class="cat" id="cat-bebidas">' +
-      '<div class="cat__head"><h3>' + esc(c.nombre) + '</h3><p>' + esc(c.desc || '') + '</p></div>' +
+      catHeadHTML(c) +
       '<details class="beb">' +
         '<summary class="beb__sum">' +
           '<svg class="beb__ico" aria-hidden="true"><use href="#bh-vaso"/></svg>' +

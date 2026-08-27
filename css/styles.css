@@ -285,9 +285,13 @@ button { font: inherit; color: inherit; cursor: pointer; border: none; backgroun
 }
 
 .cat { margin-bottom: var(--e7); scroll-margin-top: calc(var(--sticky-h) + var(--e4)); }
-.cat__head { padding-bottom: var(--e3); border-bottom: 2px solid var(--tinta); margin-bottom: var(--e2); }
+.cat__head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--e3); padding-bottom: var(--e3); border-bottom: 2px solid var(--tinta); margin-bottom: var(--e2); }
+.cat__tit { min-width: 0; }
 .cat__head h3 { font-size: var(--t-xl); }
 .cat__head p { font-size: var(--t-sm); color: var(--tinta-2); margin-top: var(--e1); }
+.cat__deco { width: 76px; height: auto; flex: none; align-self: flex-end; margin-bottom: -2px; pointer-events: none; user-select: none; }
+@media (min-width: 640px) { .cat__deco { width: 96px; } }
+@media (prefers-color-scheme: dark) { .cat__deco { opacity: .92; } }
 
 /* ── Selector de vista (solo desktop: en móvil la lista es la única sensata) ── */
 .vista { display: none; }
