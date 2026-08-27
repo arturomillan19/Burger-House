@@ -725,6 +725,46 @@ BurgerHouse.ui = (function () {
   }
 
   /* ═════════ Init ═════════ */
+  /* Carrusel "Antójate": flechas sutiles + señal de inicio/fin.
+     Nada avisa que ya no hay más fotos, así que marcamos la posición
+     (start/mid/end) en el contenedor; el CSS oculta la flecha y el
+     difuminado del extremo al que ya llegamos. */
+  function initGaleria() {
+    const wrap = $('.galeria__wrap');
+    if (!wrap) return;
+    const track = wrap.querySelector('.galeria__track');
+    const prev = wrap.querySelector('.galeria__nav--prev');
+    const next = wrap.querySelector('.galeria__nav--next');
+    if (!track) return;
+
+    function actualizar() {
+      const max = track.scrollWidth - track.clientWidth;
+      const x = track.scrollLeft;
+      let pos = 'mid';
+      if (max <= 4) pos = 'solo';           // todo cabe: sin flechas
+      else if (x <= 4) pos = 'start';
+      else if (x >= max - 4) pos = 'end';
+      wrap.dataset.pos = pos;
+    }
+
+    function pasar(dir) {
+      const paso = Math.max(track.clientWidth * 0.8, 240);
+      track.scrollBy({ left: dir * paso, behavior: 'smooth' });
+    }
+    if (prev) prev.addEventListener('click', () => pasar(-1));
+    if (next) next.addEventListener('click', () => pasar(1));
+
+    let raf = 0;
+    track.addEventListener('scroll', () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => { raf = 0; actualizar(); });
+    }, { passive: true });
+    window.addEventListener('resize', actualizar);
+    track.scrollLeft = 0;                 // arrancar siempre desde la primera foto
+    actualizar();
+    window.addEventListener('load', actualizar);
+  }
+
   function init() {
     renderTabs();
     renderMenu();
@@ -734,6 +774,7 @@ BurgerHouse.ui = (function () {
     bindVista();
     bindTabs();
     bind();
+    initGaleria();
     pintarWhatsApp();
     pintarHorario();
 

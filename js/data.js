@@ -68,7 +68,6 @@ BurgerHouse.MENU = [
     items: [
       {
         id: 'cheese-burger', nombre: 'Cheese Burger', precio: 140,
-        img: 'Media/items/cheese-burger.jpg',
         desc: 'Pan brioche, aderezo, carne con queso americano.',
         mods: [{ id: 'quitar-cb', nombre: '¿Le quitamos algo?', tipo: 'quitar', opciones: [
           { id: 'aderezo', nombre: 'Aderezo' },
@@ -76,7 +75,6 @@ BurgerHouse.MENU = [
       },
       {
         id: 'burger', nombre: 'Burger', precio: 160,
-        img: 'Media/items/burger.jpg',
         desc: 'Pan brioche, aderezo, carne con queso americano, lechuga, tomate y cebolla caramelizada.',
         mods: [{ id: 'quitar-b', nombre: '¿Le quitamos algo?', tipo: 'quitar', opciones: [
           { id: 'lechuga', nombre: 'Lechuga' }, { id: 'tomate', nombre: 'Tomate' },
@@ -85,7 +83,6 @@ BurgerHouse.MENU = [
       },
       {
         id: 'bacon-burger', nombre: 'Bacon Burger', precio: 180,
-        img: 'Media/items/bacon-burger.jpg',
         desc: 'Pan brioche, aderezo, carne con queso americano, lechuga, tomate, cebolla caramelizada y tocino.',
         destacado: 'La favorita',
         mods: [{ id: 'quitar-bb', nombre: '¿Le quitamos algo?', tipo: 'quitar', opciones: [
@@ -119,8 +116,8 @@ BurgerHouse.MENU = [
     desc: 'Para empezar o compartir.',
     img: 'Media/entradas.jpg',
     items: [
-      { id: 'aros-cebolla', nombre: 'Aros de Cebolla', precio: 120, img: 'Media/items/aros-cebolla.jpg', desc: 'Rodajas de cebolla empanizadas y fritas.' },
-      { id: 'dedos-queso', nombre: 'Dedos de Queso', precio: 120, img: 'Media/items/dedos-queso.jpg', desc: 'Bastones de queso con capa crujiente de pan molido y especias.' },
+      { id: 'aros-cebolla', nombre: 'Aros de Cebolla', precio: 120, desc: 'Rodajas de cebolla empanizadas y fritas.' },
+      { id: 'dedos-queso', nombre: 'Dedos de Queso', precio: 120, desc: 'Bastones de queso con capa crujiente de pan molido y especias.' },
       { id: 'papas-fritas', nombre: 'Papas Fritas', precio: 80, desc: 'Bastones de papa fritos, con aderezo.' },
       {
         id: 'papas-especiales', nombre: 'Papas Especiales', precio: 130,
@@ -147,18 +144,18 @@ BurgerHouse.MENU = [
       { id: 'pizza-3-carnes', nombre: '3 Carnes', precio: 180, desc: 'Salsa de tomate, queso, peperoni, tocino y salchicha italiana.',
         mods: [{ id: 'q1', nombre: '¿Le quitamos algo?', tipo: 'quitar', opciones: [
           { id: 'peperoni', nombre: 'Peperoni' }, { id: 'tocino', nombre: 'Tocino' }, { id: 'salchicha', nombre: 'Salchicha' } ] }] },
-      { id: 'pizza-doble-peperoni', nombre: 'Doble Peperoni', precio: 180, img: 'Media/items/pizza-doble-peperoni.jpg', desc: 'Salsa de tomate, queso y gran cantidad de peperoni.' },
-      { id: 'pizza-italiana', nombre: 'Italiana', precio: 180, img: 'Media/items/pizza-italiana.jpg', desc: 'Salsa de tomate, queso, peperoni, champiñón, cebolla y pimiento.',
+      { id: 'pizza-doble-peperoni', nombre: 'Doble Peperoni', precio: 180, desc: 'Salsa de tomate, queso y gran cantidad de peperoni.' },
+      { id: 'pizza-italiana', nombre: 'Italiana', precio: 180, desc: 'Salsa de tomate, queso, peperoni, champiñón, cebolla y pimiento.',
         mods: [{ id: 'q2', nombre: '¿Le quitamos algo?', tipo: 'quitar', opciones: [
           { id: 'champinon', nombre: 'Champiñón' }, { id: 'cebolla', nombre: 'Cebolla' },
           { id: 'pimiento', nombre: 'Pimiento' }, { id: 'peperoni', nombre: 'Peperoni' } ] }] },
       { id: 'pizza-lombarda', nombre: 'Lombarda', precio: 180, desc: 'Salsa de tomate, queso, tocino y champiñón.',
         mods: [{ id: 'q3', nombre: '¿Le quitamos algo?', tipo: 'quitar', opciones: [
           { id: 'champinon', nombre: 'Champiñón' }, { id: 'tocino', nombre: 'Tocino' } ] }] },
-      { id: 'pizza-margarita', nombre: 'Margarita', precio: 180, img: 'Media/items/pizza-margarita.jpg', desc: 'Salsa de tomate, queso, tomate cherry, albahaca y aceite de oliva.',
+      { id: 'pizza-margarita', nombre: 'Margarita', precio: 180, desc: 'Salsa de tomate, queso, tomate cherry, albahaca y aceite de oliva.',
         mods: [{ id: 'q4', nombre: '¿Le quitamos algo?', tipo: 'quitar', opciones: [
           { id: 'cherry', nombre: 'Tomate cherry' }, { id: 'albahaca', nombre: 'Albahaca' } ] }] },
-      { id: 'pizza-hawaiana', nombre: 'Hawaiana', precio: 180, img: 'Media/items/pizza-hawaiana.jpg', desc: 'Salsa de tomate, queso, piña y jamón.',
+      { id: 'pizza-hawaiana', nombre: 'Hawaiana', precio: 180, desc: 'Salsa de tomate, queso, piña y jamón.',
         mods: [{ id: 'q5', nombre: '¿Le quitamos algo?', tipo: 'quitar', opciones: [
           { id: 'pina', nombre: 'Piña' }, { id: 'jamon', nombre: 'Jamón' } ] }] },
       { id: 'pizza-salchicha-especial', nombre: 'Salchicha Especial', precio: 180, desc: 'Salsa de tomate, queso, salchicha italiana, tocino, cebolla, champiñón y pimiento verde.',

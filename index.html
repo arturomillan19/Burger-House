@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Black&display=swap" />
   <link rel="preload" as="image" href="Media/hero.jpg" fetchpriority="high" />
-  <link rel="stylesheet" href="css/styles.css?v=29" />
+  <link rel="stylesheet" href="css/styles.css?v=31" />
 </head>
 <body>
 
@@ -100,9 +100,16 @@
     <!-- ═══ GALERÍA (carrusel) ═══ -->
     <section class="galeria" aria-label="Fotos de nuestros platillos">
       <div class="wrap galeria__head">
-        <h2>Antójate 👀</h2>
+        <h2>Antójate</h2>
         <p>Un vistazo a lo que servimos. Desliza para ver más.</p>
       </div>
+      <div class="galeria__wrap" data-pos="start">
+      <button class="galeria__nav galeria__nav--prev" type="button" aria-label="Ver fotos anteriores" tabindex="-1">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button class="galeria__nav galeria__nav--next" type="button" aria-label="Ver más fotos" tabindex="-1">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
       <div class="galeria__track" tabindex="0" role="list">
         <figure class="slide" role="listitem"><img src="Media/gallery/g-bacon.jpg" alt="Bacon Burger" loading="lazy" decoding="async" width="760" height="760" /><figcaption>Bacon Burger</figcaption></figure>
         <figure class="slide" role="listitem"><img src="Media/gallery/g-combo.jpg" alt="Combo en canasta" loading="lazy" decoding="async" width="760" height="760" /><figcaption>Combo en canasta</figcaption></figure>
@@ -114,6 +121,12 @@
         <figure class="slide" role="listitem"><img src="Media/gallery/g-margarita.jpg" alt="Pizza Margarita" loading="lazy" decoding="async" width="760" height="760" /><figcaption>Pizza Margarita</figcaption></figure>
         <figure class="slide" role="listitem"><img src="Media/gallery/g-italiana.jpg" alt="Pizza Italiana" loading="lazy" decoding="async" width="760" height="760" /><figcaption>Pizza Italiana</figcaption></figure>
         <figure class="slide" role="listitem"><img src="Media/gallery/g-supreme.jpg" alt="Pizzas artesanales" loading="lazy" decoding="async" width="760" height="760" /><figcaption>Pizzas artesanales</figcaption></figure>
+        <a class="slide slide--fin" href="#menu" role="listitem">
+          <span class="slide--fin__ic" aria-hidden="true">🍔</span>
+          <span class="slide--fin__t">¿Se te antojó?</span>
+          <span class="slide--fin__c">Arma tu pedido</span>
+        </a>
+      </div>
       </div>
     </section>
 
@@ -231,9 +244,9 @@
     </footer>
   </section>
 
-  <script defer src="js/data.js?v=29"></script>
-  <script defer src="js/cart.js?v=29"></script>
-  <script defer src="js/whatsapp.js?v=29"></script>
-  <script defer src="js/ui.js?v=29"></script>
+  <script defer src="js/data.js?v=31"></script>
+  <script defer src="js/cart.js?v=31"></script>
+  <script defer src="js/whatsapp.js?v=31"></script>
+  <script defer src="js/ui.js?v=31"></script>
 </body>
 </html>
