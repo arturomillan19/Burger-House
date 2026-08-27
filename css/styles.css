@@ -550,7 +550,10 @@ button { font: inherit; color: inherit; cursor: pointer; border: none; backgroun
   padding: var(--e4); padding-top: calc(var(--e4) + env(safe-area-inset-top));
   border-bottom: 1px solid var(--linea); flex: none;
 }
-.pedido__head h2 { font-size: var(--t-lg); }
+.pedido__head h2 { font-size: var(--t-lg); margin-right: auto; }
+.pedido__nuevo { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; margin-right: var(--e2); border: 1px solid var(--linea-2); border-radius: 999px; font-size: var(--t-sm); font-weight: 600; color: var(--tinta-2); flex: none; transition: color .16s var(--ease), border-color .16s var(--ease); }
+.pedido__nuevo:hover { color: var(--brasa); border-color: var(--brasa); }
+.pedido__nuevo[hidden] { display: none; }
 .pedido__body { flex: 1 1 auto; overflow-y: auto; padding: var(--e4); }
 
 .li { display: grid; grid-template-columns: auto 1fr auto; gap: var(--e3); align-items: start; padding-block: var(--e4); border-bottom: 1px solid var(--linea); }

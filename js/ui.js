@@ -437,6 +437,21 @@ BurgerHouse.ui = (function () {
     unlockScroll();
   }
 
+  /* Reiniciar el proceso: borra el carrito y el folio, y vuelve al menú.
+     Es la salida siempre disponible cuando el flujo de WhatsApp deja al
+     cliente con un pedido viejo en pantalla (p. ej. si el navegador bloqueó
+     el pop-up, o al volver de la app de WhatsApp). */
+  function nuevoPedido() {
+    BurgerHouse.cart.clear();
+    folioActual = null;
+    cerrarPedido();
+  }
+  // El botón "Nuevo pedido" del encabezado aparece en cuanto hay algo que reiniciar.
+  function refreshNuevoBtn() {
+    const b = $('#pedido-nuevo');
+    if (b) b.hidden = BurgerHouse.cart.count() === 0;
+  }
+
   function renderPedido() {
     const body = $('#pedido-body');
     const lineas = BurgerHouse.cart.lineas;
@@ -445,6 +460,7 @@ BurgerHouse.ui = (function () {
         '<p>Todavía no has elegido nada.</p>' +
         '<button class="btn btn--ghost" type="button" data-cerrar-pedido>Ver el menú</button></div>';
       $('#pedido-foot').hidden = true;
+      refreshNuevoBtn();
       return;
     }
     $('#pedido-foot').hidden = false;
@@ -459,9 +475,9 @@ BurgerHouse.ui = (function () {
         '<label class="campo"><span class="campo__lbl">¿A nombre de quién? <em>opcional</em></span>' +
         '<input type="text" id="f-nombre" autocomplete="name" placeholder="Para que sepan de quién es" /></label>' +
         (pm && pm.activa ? maquilaHTML(pm) : '') +
-      '</div>' +
-      '<button class="vaciar" type="button" data-vaciar>Vaciar pedido</button>';
+      '</div>';
     pintarTotales();
+    refreshNuevoBtn();
   }
 
   function lineaHTML(l, i) {
@@ -541,6 +557,7 @@ BurgerHouse.ui = (function () {
       '<button class="btn btn--ghost" type="button" data-nuevo>Empezar otro pedido</button></div>';
     $('#pedido-foot').hidden = true;
     window.__bhUrl = r.url;
+    refreshNuevoBtn();
   }
 
   function pantallaManual(r) {
@@ -552,8 +569,10 @@ BurgerHouse.ui = (function () {
       '<p>Tu navegador bloqueó la ventana. Tu pedido <b>' + esc(folioActual) + '</b> está listo — ábrelo o cópialo:</p>' +
       '<a class="btn btn--rojo" href="' + esc(r.url) + '" target="_blank" rel="noopener">Abrir WhatsApp</a>' +
       '<button class="btn btn--ghost" type="button" data-copiar>Copiar la comanda</button>' +
-      '<p class="exito__nota">Si copias, pégalo en un mensaje a ' + esc(BurgerHouse.config.whatsapp) + '.</p></div>';
+      '<p class="exito__nota">Si copias, pégalo en un mensaje a ' + esc(BurgerHouse.config.whatsapp) + '.</p>' +
+      '<button class="btn btn--ghost" type="button" data-nuevo>Empezar otro pedido</button></div>';
     $('#pedido-foot').hidden = true;
+    refreshNuevoBtn();
   }
 
   /* ═════════ Aviso de pedido restaurado ═════════ */
@@ -693,11 +712,16 @@ BurgerHouse.ui = (function () {
 
     // Pedido
     $('#pedido-cerrar').addEventListener('click', cerrarPedido);
+    $('#pedido-nuevo').addEventListener('click', () => {
+      // Si aún no se ha enviado y hay cosas en el carrito, confirmamos para no borrar por accidente.
+      if (!folioActual && BurgerHouse.cart.count() > 0 &&
+          !confirm('¿Empezar un pedido nuevo? Se borrará lo que llevas.')) return;
+      nuevoPedido();
+    });
     $('#pedido-body').addEventListener('click', (e) => {
       const mas = e.target.closest('[data-mas-li]');
       const menos = e.target.closest('[data-menos-li]');
       const editar = e.target.closest('[data-editar]');
-      const vaciar = e.target.closest('[data-vaciar]');
       if (mas) {
         const i = +mas.getAttribute('data-mas-li');
         BurgerHouse.cart.updateCantidad(i, BurgerHouse.cart.lineas[i].cantidad + 1);
@@ -709,10 +733,8 @@ BurgerHouse.ui = (function () {
         const l = BurgerHouse.cart.lineas[i];
         cerrarPedido();
         setTimeout(() => abrirHoja(l.catId, l.itemId, i), 240);
-      } else if (vaciar) {
-        if (confirm('¿Vaciar todo el pedido?')) { BurgerHouse.cart.clear(); }
       } else if (e.target.closest('[data-nuevo]')) {
-        BurgerHouse.cart.clear(); folioActual = null; cerrarPedido();
+        nuevoPedido();
       } else if (e.target.closest('[data-manual]')) {
         if (window.__bhUrl) window.open(window.__bhUrl, '_blank', 'noopener');
       } else if (e.target.closest('[data-copiar]')) {
