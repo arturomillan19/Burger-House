@@ -81,7 +81,6 @@ BurgerHouse.MENU = [
       {
         id: 'cheese-burger', nombre: 'Cheese Burger', precio: 140,
         desc: 'Pan brioche, aderezo, carne con queso americano.',
-        destacado: 'La más pedida',
         mods: [{ id: 'quitar-cb', nombre: '¿Le quitamos algo?', tipo: 'quitar', opciones: [
           { id: 'aderezo', nombre: 'Aderezo' },
         ] }],
@@ -97,6 +96,7 @@ BurgerHouse.MENU = [
       {
         id: 'bacon-burger', nombre: 'Bacon Burger', precio: 180,
         desc: 'Pan brioche, aderezo, carne con queso americano, lechuga, tomate, cebolla caramelizada y tocino.',
+        destacado: 'La favorita',
         mods: [{ id: 'quitar-bb', nombre: '¿Le quitamos algo?', tipo: 'quitar', opciones: [
           { id: 'lechuga', nombre: 'Lechuga' }, { id: 'tomate', nombre: 'Tomate' },
           { id: 'cebolla', nombre: 'Cebolla' }, { id: 'tocino', nombre: 'Tocino' },

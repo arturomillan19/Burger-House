@@ -149,9 +149,9 @@ button { font: inherit; color: inherit; cursor: pointer; border: none; backgroun
 }
 
 /* ═══════════ HERO ═══════════ */
-.hero { position: relative; min-height: 88svh; display: flex; align-items: flex-end; overflow: hidden; background: var(--tinta); }
+.hero { position: relative; min-height: 70svh; display: flex; align-items: flex-end; overflow: hidden; background: var(--tinta); }
 /* El encuadre baja el foco: la hamburguesa vive arriba, el texto abajo. */
-.hero__bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 32%; }
+.hero__bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; transform: scale(1.3); transform-origin: 50% 62%; }
 /* Velo solo donde vive el texto: la foto es el héroe, no el fondo de un cartel. */
 .hero::after {
   content: ""; position: absolute; inset: 0;
@@ -167,7 +167,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: none; backgroun
    Así el producto se ve completo en vez de quedar debajo del titular. */
 @media (min-width: 900px) {
   .hero { min-height: min(760px, 82svh); align-items: center; }
-  .hero__bg { object-position: 72% 42%; }
+  .hero__bg { object-position: 72% 42%; transform: none; }
   .hero::after {
     background:
       linear-gradient(90deg, rgba(18,13,10,.86) 0%, rgba(18,13,10,.58) 42%, transparent 68%),
