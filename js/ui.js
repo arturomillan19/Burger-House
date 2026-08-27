@@ -797,6 +797,27 @@ BurgerHouse.ui = (function () {
     track.scrollLeft = 0;                 // arrancar siempre desde la primera foto
     actualizar();
     window.addEventListener('load', actualizar);
+
+    /* Pedir directo desde la foto. El precio se lee de los datos (no se
+       hardcodea en el HTML) y el clic reusa abrirHoja: si el platillo no
+       tiene personalización lo agrega directo; si tiene, abre la hoja rápida. */
+    function etiqueta(btn) {
+      const it = item.apply(null, btn.getAttribute('data-ga-add').split(':'));
+      if (it) btn.textContent = 'Agregar · ' + peso(it.precio);
+    }
+    track.querySelectorAll('[data-ga-add]').forEach(etiqueta);
+    track.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-ga-add]');
+      if (!b) return;
+      const [c, i] = b.getAttribute('data-ga-add').split(':');
+      abrirHoja(c, i);
+      if (!tienePersonalizacion(c, i)) {   // se agregó directo → confirmación en el botón
+        b.classList.add('slide__add--ok');
+        b.textContent = '✓ Agregado';
+        clearTimeout(b.__t);
+        b.__t = setTimeout(() => { b.classList.remove('slide__add--ok'); etiqueta(b); }, 1500);
+      }
+    });
   }
 
   function init() {
