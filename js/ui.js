@@ -58,11 +58,66 @@ BurgerHouse.ui = (function () {
     const cont = $('#menu-cats');
     if (!cont) return;
     cont.innerHTML = categorias().map((c) => {
+      if (c.id === 'bebidas') return bebidasHTML(c);
       const filas = c.items.map((it) => filaHTML(c, it)).join('');
       return '<section class="cat" id="cat-' + c.id + '">' +
         '<div class="cat__head"><h3>' + esc(c.nombre) + '</h3><p>' + esc(c.desc || '') + '</p></div>' +
         '<div class="filas">' + filas + '</div></section>';
     }).join('');
+  }
+
+  /* Bebidas: desplegable compacto tipo formulario (elige cuáles y cuántas).
+     Ocupa poco y no necesita una foto por bebida. */
+  function bebidasHTML(c) {
+    const desde = Math.min.apply(null, c.items.map((b) => b.precio));
+    const rows = c.items.map((b) =>
+      '<div class="beb__row" data-beb-row="' + b.id + '">' +
+        '<span class="beb__nom">' + esc(b.nombre) + '<small>' + peso(b.precio) + '</small></span>' +
+        '<div class="qty qty--beb">' +
+          '<button type="button" data-beb-menos="' + b.id + '" aria-label="Quitar ' + esc(b.nombre) + '">−</button>' +
+          '<b data-beb-q="' + b.id + '">0</b>' +
+          '<button type="button" data-beb-mas="' + b.id + '" aria-label="Agregar ' + esc(b.nombre) + '">+</button>' +
+        '</div>' +
+      '</div>').join('');
+    return '<section class="cat" id="cat-bebidas">' +
+      '<div class="cat__head"><h3>' + esc(c.nombre) + '</h3><p>' + esc(c.desc || '') + '</p></div>' +
+      '<details class="beb">' +
+        '<summary class="beb__sum">' +
+          '<svg class="beb__ico" aria-hidden="true"><use href="#bh-vaso"/></svg>' +
+          '<span class="beb__lbl">Elegir bebidas <small>desde ' + peso(desde) + '</small></span>' +
+          '<span class="beb__n" data-beb-total hidden>0</span>' +
+          '<svg class="beb__chev" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>' +
+        '</summary>' +
+        '<div class="beb__lista">' + rows + '</div>' +
+      '</details></section>';
+  }
+
+  function addBebida(id, delta) {
+    const b = BurgerHouse.BEBIDAS.find((x) => x.id === id);
+    if (!b) return;
+    const idx = BurgerHouse.cart.lineas.findIndex((l) => l.catId === 'bebidas' && l.itemId === id);
+    if (delta > 0) {
+      if (idx === -1) BurgerHouse.cart.add({ catId: 'bebidas', catNombre: 'Bebidas', itemId: id, nombre: b.nombre, base: b.precio, cantidad: 1, mods: [], nota: '' });
+      else BurgerHouse.cart.updateCantidad(idx, BurgerHouse.cart.lineas[idx].cantidad + 1);
+      pulso();
+    } else if (idx !== -1) {
+      BurgerHouse.cart.updateCantidad(idx, BurgerHouse.cart.lineas[idx].cantidad - 1);
+    }
+  }
+
+  function refreshBebidas() {
+    let tot = 0;
+    BurgerHouse.BEBIDAS.forEach((b) => {
+      const q = $('[data-beb-q="' + b.id + '"]');
+      if (!q) return;
+      const idx = BurgerHouse.cart.lineas.findIndex((l) => l.catId === 'bebidas' && l.itemId === b.id);
+      const n = idx === -1 ? 0 : BurgerHouse.cart.lineas[idx].cantidad;
+      tot += n;
+      q.textContent = n;
+      const row = q.closest('.beb__row'); if (row) row.classList.toggle('beb__row--on', n > 0);
+    });
+    const badge = $('[data-beb-total]');
+    if (badge) { badge.textContent = tot; badge.hidden = tot === 0; }
   }
 
   function filaHTML(c, it) {
@@ -576,6 +631,10 @@ BurgerHouse.ui = (function () {
         abrirHoja(c, i);
         return;
       }
+      const bmas = e.target.closest('[data-beb-mas]');
+      if (bmas) { e.preventDefault(); addBebida(bmas.getAttribute('data-beb-mas'), 1); return; }
+      const bmenos = e.target.closest('[data-beb-menos]');
+      if (bmenos) { e.preventDefault(); addBebida(bmenos.getAttribute('data-beb-menos'), -1); return; }
       if (e.target.closest('[data-abrir-pedido]')) { abrirPedido(); return; }
       // El atajo del nav abre el resumen solo si ya hay algo; si no, deja que
       // el enlace haga su trabajo y baje al menú.
@@ -681,6 +740,7 @@ BurgerHouse.ui = (function () {
       renderBarra(snap);
       renderNavCta(snap);
       refreshContadores();
+      refreshBebidas();
       if (!$('#pedido').hidden) {
         // Redibujar el resumen borraría lo que el cliente ya llenó: se rescata
         // el nombre, el foco y —crítico— la casilla de maquila, para que nadie

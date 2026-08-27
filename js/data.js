@@ -37,22 +37,10 @@ BurgerHouse.config = {
 BurgerHouse.MODS_CAT = {
   burgers: [
     {
-      id: 'termino', nombre: 'Término de la carne', tipo: 'elegir', min: 1, max: 1,
-      opciones: [
-        { id: 'tres-cuartos', nombre: 'Tres cuartos', precio: 0, default: true },
-        { id: 'medio', nombre: 'Término medio', precio: 0 },
-        { id: 'bien-cocida', nombre: 'Bien cocida', precio: 0 },
-      ],
-    },
-    {
-      id: 'extras-burger', nombre: '¿Le agregamos algo?', tipo: 'agregar', max: 6,
+      id: 'extras-burger', nombre: '¿Le agregamos algo?', tipo: 'agregar', max: 4,
       opciones: [
         { id: 'carne-extra', nombre: 'Carne extra', precio: 30, max: 3 },
-        { id: 'queso-extra', nombre: 'Queso extra', precio: 15 },
         { id: 'tocino-extra', nombre: 'Tocino extra', precio: 20 },
-        { id: 'aguacate', nombre: 'Aguacate', precio: 25 },
-        { id: 'jalapenos', nombre: 'Jalapeños', precio: 10 },
-        { id: 'aros-encima', nombre: 'Aros de cebolla encima', precio: 20 },
       ],
     },
   ],
@@ -188,8 +176,7 @@ BurgerHouse.BEBIDAS = [
   { id: 'manzanita', nombre: 'Manzanita', precio: 30 },
   { id: 'naranja', nombre: 'Naranja', precio: 30 },
   { id: '7up', nombre: '7UP', precio: 30 },
-  { id: 'jamaica', nombre: 'Jamaica', precio: 35, desc: 'Agua fresca',
-    mods: [{ id: 'hielo', nombre: 'Hielo', tipo: 'quitar', opciones: [{ id: 'hielo', nombre: 'Hielo' }] }] },
+  { id: 'jamaica', nombre: 'Jamaica', precio: 35, desc: 'Agua fresca' },
 ];
 
 /* Paquetes para eventos (cotización por WhatsApp). */
