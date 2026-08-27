@@ -61,6 +61,31 @@ BurgerHouse.MODS_CAT = {
 /* MENU: bandas de la carta. Cada item es pedible (id estable = llave en el carrito). */
 BurgerHouse.MENU = [
   {
+    id: 'entradas',
+    nombre: 'Entradas',
+    desc: 'Para empezar o compartir.',
+    img: 'Media/entradas.jpg',
+    items: [
+      { id: 'aros-cebolla', nombre: 'Aros de Cebolla', precio: 120, desc: 'Rodajas de cebolla empanizadas y fritas.' },
+      { id: 'dedos-queso', nombre: 'Dedos de Queso', precio: 120, desc: 'Bastones de queso con capa crujiente de pan molido y especias.' },
+      { id: 'papas-fritas', nombre: 'Papas Fritas', precio: 80, desc: 'Bastones de papa fritos, con aderezo.' },
+      {
+        id: 'papas-especiales', nombre: 'Papas Especiales', precio: 130,
+        desc: 'Papas fritas con cebolla caramelizada, tocino y aderezo.',
+        mods: [{ id: 'quitar-pe', nombre: '¿Le quitamos algo?', tipo: 'quitar', opciones: [
+          { id: 'cebolla', nombre: 'Cebolla' }, { id: 'tocino', nombre: 'Tocino' }, { id: 'aderezo', nombre: 'Aderezo' },
+        ] }],
+      },
+      {
+        id: 'papas-con-carne', nombre: 'Papas con Carne', precio: 150,
+        desc: 'Papas fritas con cebolla caramelizada, tocino y carne molida.',
+        mods: [{ id: 'quitar-pc', nombre: '¿Le quitamos algo?', tipo: 'quitar', opciones: [
+          { id: 'cebolla', nombre: 'Cebolla' }, { id: 'tocino', nombre: 'Tocino' },
+        ] }],
+      },
+    ],
+  },
+  {
     id: 'burgers',
     nombre: 'Burgers',
     desc: 'Pan brioche, carne de calidad y queso americano.',
@@ -106,31 +131,6 @@ BurgerHouse.MENU = [
         mods: [{ id: 'quitar-gb', nombre: '¿Le quitamos algo?', tipo: 'quitar', opciones: [
           { id: 'tomate', nombre: 'Tomate' }, { id: 'cebolla', nombre: 'Cebolla' },
           { id: 'tocino', nombre: 'Tocino' }, { id: 'aderezo', nombre: 'Aderezo' },
-        ] }],
-      },
-    ],
-  },
-  {
-    id: 'entradas',
-    nombre: 'Entradas',
-    desc: 'Para empezar o compartir.',
-    img: 'Media/entradas.jpg',
-    items: [
-      { id: 'aros-cebolla', nombre: 'Aros de Cebolla', precio: 120, desc: 'Rodajas de cebolla empanizadas y fritas.' },
-      { id: 'dedos-queso', nombre: 'Dedos de Queso', precio: 120, desc: 'Bastones de queso con capa crujiente de pan molido y especias.' },
-      { id: 'papas-fritas', nombre: 'Papas Fritas', precio: 80, desc: 'Bastones de papa fritos, con aderezo.' },
-      {
-        id: 'papas-especiales', nombre: 'Papas Especiales', precio: 130,
-        desc: 'Papas fritas con cebolla caramelizada, tocino y aderezo.',
-        mods: [{ id: 'quitar-pe', nombre: '¿Le quitamos algo?', tipo: 'quitar', opciones: [
-          { id: 'cebolla', nombre: 'Cebolla' }, { id: 'tocino', nombre: 'Tocino' }, { id: 'aderezo', nombre: 'Aderezo' },
-        ] }],
-      },
-      {
-        id: 'papas-con-carne', nombre: 'Papas con Carne', precio: 150,
-        desc: 'Papas fritas con cebolla caramelizada, tocino y carne molida.',
-        mods: [{ id: 'quitar-pc', nombre: '¿Le quitamos algo?', tipo: 'quitar', opciones: [
-          { id: 'cebolla', nombre: 'Cebolla' }, { id: 'tocino', nombre: 'Tocino' },
         ] }],
       },
     ],
