@@ -4,6 +4,27 @@
  * Mobile-first. Un solo acento. Contraste por peso y escala, no por acumular.
  */
 
+/* ═══════════ TIPOGRAFÍA (auto-alojada) ═══════════
+ * Servidas desde el propio dominio para que la página cargue sólida en datos
+ * móviles (sin depender de fonts.googleapis.com, que bloquea el render si la
+ * señal está mala). Subset latin: cubre acentos y ñ del español. */
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/archivo-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Archivo Black';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/archivo-black-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /* ═══════════ TOKENS ═══════════ */
 :root {
   /* 60-30-10 */
