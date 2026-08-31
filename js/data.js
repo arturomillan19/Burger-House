@@ -178,7 +178,7 @@ BurgerHouse.BEBIDAS = [
 
 /* Paquetes para eventos (cotización por WhatsApp). */
 BurgerHouse.EVENTOS = [
-  { id: 'basico',  nombre: 'Básico',  personas: 30,  precio: 3500, incluye: ['30 Cheese Burgers', 'Papas fritas', 'Cubiertos', 'Entrega en el lugar'] },
-  { id: 'mediano', nombre: 'Mediano', personas: 50,  precio: 5000, incluye: ['50 Cheese Burgers', 'Papas fritas', 'Cubiertos', 'Entrega en el lugar'], destacado: 'El más pedido' },
-  { id: 'grande',  nombre: 'Grande',  personas: 100, precio: 9000, incluye: ['100 Cheese Burgers', 'Papas fritas', 'Cubiertos', 'Entrega en el lugar'] },
+  { id: 'basico',  nombre: 'Básico',  personas: 30,  precio: 4000, incluye: ['30 Cheese Burgers', 'Papas fritas', 'Cubiertos', 'Entrega en el lugar'] },
+  { id: 'mediano', nombre: 'Mediano', personas: 50,  precio: 6000, incluye: ['50 Cheese Burgers', 'Papas fritas', 'Cubiertos', 'Entrega en el lugar'], destacado: 'El más pedido' },
+  { id: 'grande',  nombre: 'Grande',  personas: 100, precio: 10000, incluye: ['100 Cheese Burgers', 'Papas fritas', 'Cubiertos', 'Entrega en el lugar'] },
 ];
