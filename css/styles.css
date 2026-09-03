@@ -246,8 +246,6 @@ button { font: inherit; color: inherit; cursor: pointer; border: none; backgroun
 .slide__add::before { content: "+"; font-size: 1.15em; font-weight: 800; }
 .slide__add:hover { transform: translateY(-1px); }
 .slide__add:active { transform: scale(.93); }
-.slide__add--ver { background: rgba(255,255,255,.94); color: var(--tinta); }
-.slide__add--ver::before { content: ""; }
 .slide__add--ok { background: #2F8F4E; color: #fff; }
 .slide__add--ok::before { content: ""; }
 
@@ -324,7 +322,13 @@ button { font: inherit; color: inherit; cursor: pointer; border: none; backgroun
   border-radius: var(--r); font-size: var(--t-sm); color: var(--tinta-2);
 }
 
-.cat { margin-bottom: var(--e7); scroll-margin-top: calc(var(--sticky-h) + var(--e4)); }
+/* Panel de categoría: solo una visible; al cambiar de tab entra deslizando. */
+.cat { display: none; margin-bottom: var(--e7); }
+.cat--on { display: block; }
+.cat--der { animation: catEntra-der .26s var(--ease); }
+.cat--izq { animation: catEntra-izq .26s var(--ease); }
+@keyframes catEntra-der { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+@keyframes catEntra-izq { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: none; } }
 .cat__head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--e3); padding-bottom: var(--e3); border-bottom: 2px solid var(--tinta); margin-bottom: var(--e2); }
 .cat__tit { min-width: 0; }
 .cat__head h3 { font-size: var(--t-xl); }

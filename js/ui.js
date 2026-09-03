@@ -223,28 +223,41 @@ BurgerHouse.ui = (function () {
     if (tabs) r.setProperty('--tabs-h', tabs.offsetHeight + 'px');
   }
 
+  /* Menú por paneles: se muestra UNA categoría a la vez y al cambiar de tab
+     entra con un deslizado suave (según la dirección del cambio). Antes eran
+     todas apiladas y el tab hacía un scroll largo que se sentía brusco. */
+  let catActual = null;
+  function activarCategoria(id, dir) {
+    const sec = document.getElementById('cat-' + id);
+    if (!sec) return;
+    $$('.cat').forEach((s) => s.classList.remove('cat--on', 'cat--der', 'cat--izq'));
+    $$('.tab').forEach((t) => t.classList.toggle('tab--on', t.getAttribute('data-tab') === id));
+    sec.classList.add('cat--on');
+    if (dir === 1) sec.classList.add('cat--der');
+    else if (dir === -1) sec.classList.add('cat--izq');
+    catActual = id;
+    // Si el usuario estaba scrolleado dentro de una categoría, llevar el inicio
+    // de la nueva bajo la barra pegajosa (scroll corto, no el vuelo de antes).
+    if (dir !== null) {
+      const top = $('#menu-cats').getBoundingClientRect().top + window.scrollY - offsetPegajoso();
+      if (window.scrollY > top + 4) window.scrollTo({ top: top, behavior: 'smooth' });
+    }
+  }
+
   function bindTabs() {
     const cont = $('#tabs');
     if (!cont) return;
     cont.addEventListener('click', (e) => {
       const b = e.target.closest('[data-tab]');
       if (!b) return;
-      const sec = document.getElementById('cat-' + b.getAttribute('data-tab'));
-      if (!sec) return;
-      const y = sec.getBoundingClientRect().top + window.scrollY - offsetPegajoso();
-      window.scrollTo({ top: y, behavior: 'smooth' });
+      const id = b.getAttribute('data-tab');
+      if (id === catActual) return;
+      const ids = categorias().map((c) => c.id);
+      const dir = ids.indexOf(id) > ids.indexOf(catActual) ? 1 : -1;
+      activarCategoria(id, dir);
     });
-    // El tab activo sigue a la sección visible.
-    if ('IntersectionObserver' in window) {
-      const obs = new IntersectionObserver((entradas) => {
-        entradas.forEach((en) => {
-          if (!en.isIntersecting) return;
-          const id = en.target.id.replace('cat-', '');
-          $$('.tab').forEach((t) => t.classList.toggle('tab--on', t.getAttribute('data-tab') === id));
-        });
-      }, { rootMargin: '-120px 0px -70% 0px' });
-      $$('.cat').forEach((s) => obs.observe(s));
-    }
+    const primera = categorias()[0];
+    if (primera) activarCategoria(primera.id, null);   // sin animación al cargar
   }
 
   /* ═════════ Hoja de personalización ═════════ */
